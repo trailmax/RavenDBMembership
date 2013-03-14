@@ -116,11 +116,19 @@ namespace RavenDBMembership.Provider
         public override void Initialize(string name, NameValueCollection config)
         {
             if (config == null)
+            {
                 throw new ArgumentNullException("There are no membership configuration settings.");
+            }
+
             if (string.IsNullOrEmpty(name))
+            {
                 name = "RavenDBMembershipProvider";
+            }
+
             if (string.IsNullOrEmpty(config["description"]))
+            {
                 config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
+            }
 
             base.Initialize(name, config);
 
@@ -129,32 +137,7 @@ namespace RavenDBMembership.Provider
             
             if (_documentStore == null)
             {
-                string conString = ConfigurationManager.ConnectionStrings[
-                    config["connectionStringName"]].ConnectionString;
-                if (string.IsNullOrEmpty(conString))
-                    throw new ProviderException("The connection string name must be set.");
-                if (string.IsNullOrEmpty(config["enableEmbeddableDocumentStore"]))
-                    throw new ProviderException("RavenDB can run as a service or embedded mode, you must set enableEmbeddableDocumentStore in the web.config.");
-
-                bool embeddedStore = Convert.ToBoolean(config["enableEmbeddableDocumentStore"]);
-
-                if (embeddedStore)
-                {
-                    _documentStore = new EmbeddableDocumentStore()
-                    {
-                        ConnectionStringName =
-                            config["connectionStringName"]
-                    };
-                }
-                else
-                {
-                    _documentStore = new DocumentStore()
-                    {
-                        ConnectionStringName =
-                            config["connectionStringName"]
-                    };
-                }
-                _documentStore.Initialize();                
+                _documentStore = RavenInitialiser.InitialiseDocumentStore(config);
             }
         }
 
@@ -216,7 +199,7 @@ namespace RavenDBMembership.Provider
                 return null;
             }
             
-            //If we require a qeustion and answer for password reset/retrieval and they were not provided throw exception
+            //If we require a question and answer for password reset/retrieval and they were not provided throw exception
             if (((_enablePasswordReset || _enablePasswordRetrieval) && _requiresQuestionAndAnswer) && string.IsNullOrEmpty(passwordAnswer))
                 throw new ArgumentException("Requires question and answer is set to true and a question and answer were not provided.");
 
@@ -239,8 +222,7 @@ namespace RavenDBMembership.Provider
                 if (RequiresUniqueEmail)
                 {
                     var existingUser = session.Query<User>()
-                        .Where(x => x.Email == email && x.ApplicationName == ApplicationName)
-                        .FirstOrDefault();
+                        .FirstOrDefault(x => x.Email == email && x.ApplicationName == ApplicationName);
 
                     if (existingUser != null)
                     {
@@ -441,9 +423,7 @@ namespace RavenDBMembership.Provider
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var user = session.Query<User>()
-                    .Where(x => x.Username == userName && x.ApplicationName == ApplicationName)
-                    .SingleOrDefault();
+                var user = session.Query<User>().SingleOrDefault(x => x.Username == userName && x.ApplicationName == ApplicationName);
 
                 if (user == null)
                     return false;
@@ -678,8 +658,7 @@ namespace RavenDBMembership.Provider
                 case MembershipPasswordFormat.Clear:
                     break;
                 case MembershipPasswordFormat.Encrypted:
-                    encodedPassword =
-                      Convert.ToBase64String(EncryptPassword(Encoding.Unicode.GetBytes(password)));
+                    encodedPassword = Convert.ToBase64String(EncryptPassword(Encoding.Unicode.GetBytes(password)));
                     break;
                 case MembershipPasswordFormat.Hashed:
                     if (string.IsNullOrEmpty(salt))
