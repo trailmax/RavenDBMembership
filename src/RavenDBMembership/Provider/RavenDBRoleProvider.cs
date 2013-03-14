@@ -34,69 +34,34 @@ namespace RavenDBMembership.Provider
 			set { _documentStore = value; }
 		}        
 
+
 		public override void Initialize(string name, NameValueCollection config)
 		{
-		    if(config == null)
-                throw new ArgumentNullException("There are not membership configuration settings.");
-            if(string.IsNullOrEmpty(name))
+		    if (config == null)
+		    {
+		        throw new ArgumentNullException("There are no membership configuration settings.");
+		    }
+
+            if (string.IsNullOrEmpty(name))
+            {
                 name = "RavenDBMembershipProvider";
-            if(string.IsNullOrEmpty(config["description"]))
+            }
+
+            if (string.IsNullOrEmpty(config["description"]))
+            {
                 config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
+            }
 
             if (_documentStore == null)
-            {                
-                string conString = ConfigurationManager.ConnectionStrings[
-                    config["connectionStringName"]].ConnectionString;
-                
-                if (string.IsNullOrEmpty(conString))
-                    throw new ProviderException("The connection string name must be set.");
-                if (string.IsNullOrEmpty(config["enableEmbeddableDocumentStore"]))
-                    throw new ProviderException("RavenDB can run as a service or embedded mode, you must set enableEmbeddableDocumentStore in the web.config.");
-
-                bool embeddedStore = Convert.ToBoolean(config["enableEmbeddableDocumentStore"]);
-
-                if (embeddedStore)
-                {
-                    _documentStore = new EmbeddableDocumentStore()
-                    {
-                        ConnectionStringName =
-                            config["connectionStringName"]
-                    };
-                }
-                else
-                {
-                    _documentStore = new DocumentStore()
-                    {
-                        ConnectionStringName =
-                            config["connectionStringName"]
-                    };
-                }
-                _documentStore.Initialize();                
+            {
+                _documentStore = RavenInitialiser.InitialiseDocumentStore(config);
             }
 
             ApplicationName = string.IsNullOrEmpty(config["applicationName"]) ? System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath : config["applicationName"];
 
             base.Initialize(name, config);
-            
-            InitConfigSettings(config);
-
-            //try
-            //{
-            //    var locator = ServiceLocator.Current;
-            //    if (locator != null)
-            //    {
-            //        DocumentStore = locator.GetInstance<IDocumentStore>();
-            //    }
-            //}
-            //catch (NullReferenceException) // Swallow Nullreference expection that occurs when there is no current service locator.
-            //{
-            //}
-			
 		}
 
-        private void InitConfigSettings(NameValueCollection config) {
-
-        }
 
 		public override string ApplicationName { get; set; }
 
@@ -268,8 +233,7 @@ namespace RavenDBMembership.Provider
 			using (var session = DocumentStore.OpenSession())
 			{
 				var user = session.Query<User>()
-					.Where(u => u.Username == username && u.ApplicationName == ApplicationName)
-					.FirstOrDefault();
+                    .FirstOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
 
 				if (user != null)
 				{
