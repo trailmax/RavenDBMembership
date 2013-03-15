@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Web.Security;
 
 namespace RavenDBMembership
 {
@@ -24,7 +21,11 @@ namespace RavenDBMembership
 		public string PasswordQuestion { get; set; }
 		public string PasswordAnswer { get; set; }
 		public bool IsLockedOut { get; set; }		
+
+        [Obsolete("isOnline does not make any sense here. Please use LastSeenOnline")]
 		public bool IsOnline { get; set; }
+	    public DateTime LastSeenOnline { get; set; }
+
         public int FailedPasswordAttempts { get; set; }
         public int FailedPasswordAnswerAttempts { get; set; }
         public DateTime LastFailedPasswordAttempt { get; set; }
