@@ -280,41 +280,6 @@ namespace RavenDBMembership.Provider
 
 
 
-        /// <summary>
-        /// Creates user with FullName
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="password"></param>
-        /// <param name="email"></param>
-        /// <param name="fullName"></param>
-        /// <param name="passwordQuestion"></param>
-        /// <param name="passwordAnswer"></param>
-        /// <param name="isApproved"></param>
-        /// <param name="providerUserKey">This is ignored. On user creation, database key is used for this value</param>
-        /// <param name="status"></param>
-        /// <returns></returns>
-        public MembershipUser CreateUser(string username, string password, string email, string fullName,
-            string passwordQuestion, string passwordAnswer, bool isApproved, object providerUserKey,
-            out MembershipCreateStatus status)
-        {
-            // ProviderUserKey is ignored.
-            MembershipUser user = CreateUser(username, password, email, passwordQuestion, passwordAnswer,
-                isApproved, providerUserKey, out status);
-
-            if (user != null)
-            {
-                using (var session = _documentStore.OpenSession())
-                {
-                    var ravenUser = session.Load<User>(user.ProviderUserKey.ToString());
-                    ravenUser.FullName = fullName;
-                    session.SaveChanges();
-                }
-            }
-            return user;
-        }
-
-
-
         public override bool DeleteUser(string username, bool deleteAllRelatedData)
         {
             using (var session = DocumentStore.OpenSession())
@@ -368,7 +333,7 @@ namespace RavenDBMembership.Provider
             using (var session = DocumentStore.OpenSession())
             {
                 return (from u in session.Query<User>()
-                        where u.ApplicationName == ApplicationName && u.IsOnline == true
+                        where u.ApplicationName == ApplicationName && u.IsOnline
                         select u).Count<User>();
             }
         }
@@ -531,20 +496,19 @@ namespace RavenDBMembership.Provider
         }
 
 
-        //TODO keep reviewing form here
         /// <summary>
         /// Verifies that the specified user name and password exist in the data source.
+        /// Also checks if user is not locked out.
         /// </summary>
         /// <param name="username"></param>
         /// <param name="password"></param>
-        /// <returns>true if the specified username and password are valid; otherwise, false.</returns>
+        /// <returns>true if the specified username and password are valid and user is not locked out; otherwise, false.</returns>
         public override bool ValidateUser(string username, string password)
         {
             if (string.IsNullOrEmpty(username) || String.IsNullOrEmpty(password))
             {
                 return false;
             }
-            //TODO check if user is locked out on Validation.
 
             using (var session = DocumentStore.OpenSession())
             {
@@ -552,7 +516,7 @@ namespace RavenDBMembership.Provider
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
 
-                if (user == null)
+                if (user == null || user.IsLockedOut)
                 {
                     return false;
                 }
@@ -594,37 +558,6 @@ namespace RavenDBMembership.Provider
         }
 
 
-        //TODO find a use for this
-        private User UpdatePasswordAttempts(User u, PasswordAttemptTypes attemptType, bool signedInOk)
-        {
-            long minutesSinceLastAttempt = DateTime.Now.Ticks - u.LastFailedPasswordAttempt.Ticks;
-            if (signedInOk || minutesSinceLastAttempt > (long)PasswordAttemptWindow)
-            {
-                u.LastFailedPasswordAttempt = new DateTime(1900, 1, 1);
-                u.FailedPasswordAttempts = 0;
-                u.FailedPasswordAnswerAttempts = 0;
-                SaveRavenUser(u);
-                return u;
-            }
-            else
-            {
-                u.LastFailedPasswordAttempt = DateTime.Now;
-                if (attemptType == PasswordAttemptTypes.PasswordAttempt)
-                {
-                    u.FailedPasswordAttempts++;
-                }
-                else
-                {
-                    u.FailedPasswordAnswerAttempts++;
-                }
-                if (u.FailedPasswordAttempts > MaxInvalidPasswordAttempts
-                    || u.FailedPasswordAnswerAttempts > MaxInvalidPasswordAttempts)
-                    u.IsLockedOut = true;
-            }
-            SaveRavenUser(u);
-            return u;
-        }
-
         private MembershipUserCollection FindUsers(Func<User, bool> predicate, int pageIndex, int pageSize, out int totalRecords)
         {
             var membershipUsers = new MembershipUserCollection();
@@ -659,15 +592,6 @@ namespace RavenDBMembership.Provider
         }
 
 
-        private void SaveRavenUser(User user)
-        {
-            using (var session = _documentStore.OpenSession())
-            {
-                session.Store(user);
-                session.SaveChanges();
-            }
-        }
-
         private void InitConfigSettings(NameValueCollection config)
         {
             ApplicationName = GetConfigValue(config["applicationName"], System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath);
@@ -678,13 +602,14 @@ namespace RavenDBMembership.Provider
             _passwordStrengthRegularExpression = Convert.ToString(GetConfigValue(config["passwordStrengthRegularExpression"], String.Empty));
             _enablePasswordReset = Convert.ToBoolean(GetConfigValue(config["enablePasswordReset"], "true"));
 
-            var enablePasswordRetrieval = Convert.ToBoolean(GetConfigValue(config["enablePasswordRetrieval"], "true"));
+            var enablePasswordRetrieval = Convert.ToBoolean(GetConfigValue(config["enablePasswordRetrieval"], "false"));
             if (enablePasswordRetrieval)
             {
                 throw new ProviderException("Password Retrieval can not be enabled due to security issues. Please use password resetting option");
             }
 
             _requiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"));
+
             var requiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"));
             if (!requiresUniqueEmail)
             {
@@ -692,26 +617,29 @@ namespace RavenDBMembership.Provider
             }
         }
 
+        
+        
         private void InitPasswordEncryptionSettings(NameValueCollection config)
         {
             System.Configuration.Configuration cfg = WebConfigurationManager.OpenWebConfiguration(System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath);
             MachineKeySection machineKey = cfg.GetSection("system.web/machineKey") as MachineKeySection;
+            if (machineKey == null)
+            {
+                throw new ProviderException("Machine Key is required in your web.config file. Please add <MachineKey> section into <system.web> part of your web.config.");
+            }
+
             _hashAlgorithm = machineKey.ValidationAlgorithm;
             _validationKey = machineKey.ValidationKey;
 
             if (machineKey.ValidationKey.Contains("AutoGenerate"))
             {
-                if (PasswordFormat != MembershipPasswordFormat.Clear)
-                {
-                    throw new ProviderException("Hashed or Encrypted passwords are not supported with auto-generated keys.");
-                }
+                throw new ProviderException("AutoGenerated keys in MachineKey are not supported by provider");
             }
 
-            string passFormat = config["passwordFormat"];
-            if (passFormat == null)
-            {
-                passFormat = "Hashed";
-            }
+            //TODO deny Sha1 and other unsecure hashing algorithms
+            // see MachineKeyValidation class and options
+
+            var passFormat = Convert.ToString(GetConfigValue(config["passwordFormat"], "Hashed"));
 
             switch (passFormat)
             {
@@ -728,7 +656,6 @@ namespace RavenDBMembership.Provider
                     throw new ProviderException("The password format from the custom provider is not supported.");
             }
         }
-
 
 
         private string EncodePassword(string password, string salt)

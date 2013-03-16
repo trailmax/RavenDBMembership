@@ -26,8 +26,10 @@ namespace RavenDBMembership
 		    HashAlgorithm algorithm;
 			if (hashAlgorithm.ToUpper().Contains("HMAC"))
             {
-                if(string.IsNullOrEmpty(macKey))
+                if (string.IsNullOrEmpty(macKey))
+                {
                     throw new ArgumentException("HMAC style hashing algorithm requires a fixed ValidationKey in the web.config or machine.config.");
+                }
                 KeyedHashAlgorithm keyedAlg = KeyedHashAlgorithm.Create(hashAlgorithm);
                 keyedAlg.Key = HexToByte(macKey);
                 algorithm = keyedAlg;
