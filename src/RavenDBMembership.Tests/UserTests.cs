@@ -709,7 +709,7 @@ namespace RavenDBMembership.Tests
         {
             var user = new User()
                            {
-                               LastSeenOnline = DateTime.Now.AddHours(-50)
+                               LastActivityDate = DateTime.Now.AddHours(-50)
                            };
 
             Assert.IsFalse(user.IsOnline);
@@ -721,7 +721,7 @@ namespace RavenDBMembership.Tests
         {
             var user = new User()
                            {
-                               LastSeenOnline = DateTime.Now.AddMinutes(-10)
+                               LastActivityDate = DateTime.Now.AddMinutes(-10)
                            };
             Assert.IsTrue(user.IsOnline);
         }
@@ -793,12 +793,12 @@ namespace RavenDBMembership.Tests
                 Email = "wilby@wcjj.net",
                 PasswordQuestion = "A QUESTION",
                 PasswordAnswer = "A ANSWER",                
-                LastSeenOnline = DateTime.Now,
+                LastActivityDate = DateTime.Now,
                 IsApproved = true,
                 Comment = "A FAKE USER",
                 ApplicationName = "TestApp",
-                DateCreated = DateTime.Now,
-                DateLastLogin = DateTime.Now,
+                CreationDate = DateTime.Now,
+                LastLoginDate = DateTime.Now,
                 FailedPasswordAttempts = 0,
                 FullName = "Wilby Jackson",
                 IsLockedOut = false

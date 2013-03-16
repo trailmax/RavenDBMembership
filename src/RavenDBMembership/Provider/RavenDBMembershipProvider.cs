@@ -251,12 +251,12 @@ namespace RavenDBMembership.Provider
             user.PasswordHash = EncodePassword(password, user.PasswordSalt);
             user.Email = email;
             user.ApplicationName = ApplicationName;
-            user.DateCreated = DateTime.Now;
+            user.CreationDate = DateTime.Now;
             user.PasswordQuestion = passwordQuestion;
             user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : EncodePassword(passwordAnswer, user.PasswordSalt);
             user.IsApproved = isApproved;
             user.IsLockedOut = false;
-            user.LastSeenOnline = DateTime.Now;
+            user.LastActivityDate = DateTime.Now;
 
             using (var session = DocumentStore.OpenSession())
             {
@@ -273,7 +273,7 @@ namespace RavenDBMembership.Provider
                 session.SaveChanges();
                 status = MembershipCreateStatus.Success;
                 return new MembershipUser(ProviderName, username, user.Id, email, passwordQuestion,
-                    user.Comment, isApproved, false, user.DateCreated, new DateTime(1900, 1, 1),
+                    user.Comment, isApproved, false, user.CreationDate, new DateTime(1900, 1, 1),
                     new DateTime(1900, 1, 1), DateTime.Now, new DateTime(1900, 1, 1));
             }
         }
@@ -395,7 +395,7 @@ namespace RavenDBMembership.Provider
 
                 if (updateLastSeenTimestamp)
                 {
-                    user.LastSeenOnline = DateTime.Now;
+                    user.LastActivityDate = DateTime.Now;
                     session.SaveChanges();
                 }
 
@@ -417,7 +417,7 @@ namespace RavenDBMembership.Provider
 
                 if (updateLastSeenTimestamp)
                 {
-                    user.LastSeenOnline = DateTime.Now;
+                    user.LastActivityDate = DateTime.Now;
                     session.SaveChanges();
                 }
 
@@ -438,32 +438,31 @@ namespace RavenDBMembership.Provider
             }
         }
 
-        //TODO keep reviewing form here
+
+        
         public override string ResetPassword(string username, string answer)
         {
             if (!EnablePasswordReset)
             {
-                throw new ProviderException("Password reset is not enabled.");
+                throw new NotSupportedException("Password reset is not enabled.");
             }
 
             using (var session = DocumentStore.OpenSession())
             {
                 try
                 {
-                    var q = from u in session.Query<User>()
-                            where u.Username == username && u.ApplicationName == ApplicationName
-                            select u;
-                    var user = q.SingleOrDefault();
+                    var user = session.Query<User>()
+                        .SingleOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
                     if (user == null)
                     {
                         throw new ProviderException("The user could not be found.");
                     }
 
-                    if (user.PasswordAnswer != EncodePassword(answer, user.PasswordSalt))
+                    if (RequiresQuestionAndAnswer && user.PasswordAnswer != EncodePassword(answer, user.PasswordSalt))
                     {
                         user.FailedPasswordAttempts++;
                         session.SaveChanges();
-                        throw new MembershipPasswordException("The password question's answer is incorrect.");
+                        throw new MembershipPasswordException("The answer to the security question is incorrect.");
                     }
                     var newPassword = Membership.GeneratePassword(8, 2);
                     user.PasswordHash = EncodePassword(newPassword, user.PasswordSalt);
@@ -472,11 +471,13 @@ namespace RavenDBMembership.Provider
                 }
                 catch (Exception ex)
                 {
+                    //TODO log
                     EventLog.WriteEntry(ApplicationName, ex.ToString());
                     throw;
                 }
             }
         }
+
 
         public override bool UnlockUser(string userName)
         {
@@ -493,33 +494,57 @@ namespace RavenDBMembership.Provider
             }
         }
 
+
         public override void UpdateUser(MembershipUser user)
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var q = from u in session.Query<User>()
-                        where u.Username == user.UserName && u.ApplicationName == ApplicationName
-                        select u;
-                var dbUser = q.SingleOrDefault();
+                User dbUser;
+                if (user.ProviderUserKey != null)
+                {
+                    dbUser = session.Load<User>(user.ProviderUserKey.ToString());
+                    if (dbUser.Username != user.UserName)
+                    {
+                        throw new ProviderException("Provider does not support updating username");
+                    }
+                }
+                else
+                {
+                    dbUser = session.Query<User>()
+                        .SingleOrDefault(u => u.Username == user.UserName && u.ApplicationName == this.ApplicationName);
+                }
+
                 if (dbUser == null)
                 {
-                    throw new HttpException("The user to update could not be found.");
+                    throw new ProviderException("The user to update could not be found.");
                 }
-                dbUser.Username = user.UserName;
+                // TODO add all the user properties here to be updated.
                 dbUser.Email = user.Email;
-                dbUser.DateCreated = user.CreationDate;
-                dbUser.DateLastLogin = user.LastLoginDate;
+                dbUser.CreationDate = user.CreationDate;
+                dbUser.LastLoginDate = user.LastLoginDate;
                 dbUser.IsApproved = user.IsApproved;
                 dbUser.IsLockedOut = user.IsLockedOut;
+                dbUser.LastActivityDate = user.LastActivityDate;
 
                 session.SaveChanges();
             }
         }
 
+
+        //TODO keep reviewing form here
+        /// <summary>
+        /// Verifies that the specified user name and password exist in the data source.
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        /// <returns>true if the specified username and password are valid; otherwise, false.</returns>
         public override bool ValidateUser(string username, string password)
         {
-            if (string.IsNullOrEmpty(username))
+            if (string.IsNullOrEmpty(username) || String.IsNullOrEmpty(password))
+            {
                 return false;
+            }
+            //TODO check if user is locked out on Validation.
 
             using (var session = DocumentStore.OpenSession())
             {
@@ -528,12 +553,14 @@ namespace RavenDBMembership.Provider
                             select u).SingleOrDefault();
 
                 if (user == null)
+                {
                     return false;
+                }
 
                 if (user.PasswordHash == EncodePassword(password, user.PasswordSalt))
                 {
-                    user.DateLastLogin = DateTime.Now;
-                    user.LastSeenOnline = DateTime.Now;
+                    user.LastLoginDate = DateTime.Now;
+                    user.LastActivityDate = DateTime.Now;
                     user.FailedPasswordAttempts = 0;
                     user.FailedPasswordAnswerAttempts = 0;
                     session.SaveChanges();
@@ -554,15 +581,20 @@ namespace RavenDBMembership.Provider
 
         #region Private Helper Functions
 
+
         private bool IsLockedOutValidationHelper(User user)
         {
             long minutesSinceLastAttempt = DateTime.Now.Ticks - user.LastFailedPasswordAttempt.Ticks;
             if (user.FailedPasswordAttempts >= MaxInvalidPasswordAttempts
-                && minutesSinceLastAttempt < (long)PasswordAttemptWindow)
+                && minutesSinceLastAttempt < (long) this.PasswordAttemptWindow)
+            {
                 return true;
+            }
             return false;
         }
 
+
+        //TODO find a use for this
         private User UpdatePasswordAttempts(User u, PasswordAttemptTypes attemptType, bool signedInOk)
         {
             long minutesSinceLastAttempt = DateTime.Now.Ticks - u.LastFailedPasswordAttempt.Ticks;
@@ -623,7 +655,7 @@ namespace RavenDBMembership.Provider
         private MembershipUser UserToMembershipUser(User user)
         {
             return new MembershipUser(ProviderName, user.Username, user.Id, user.Email, user.PasswordQuestion, user.Comment, user.IsApproved, user.IsLockedOut
-                , user.DateCreated, user.DateLastLogin.HasValue ? user.DateLastLogin.Value : new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1));
+                , user.CreationDate, user.LastLoginDate.HasValue ? user.LastLoginDate.Value : new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1));
         }
 
 

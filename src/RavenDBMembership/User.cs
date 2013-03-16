@@ -12,8 +12,8 @@ namespace RavenDBMembership
 		public string PasswordSalt { get; set; }
 		public string FullName { get; set; }
 		public string Email { get; set; }
-		public DateTime DateCreated { get; set; }
-		public DateTime? DateLastLogin { get; set; }
+		public DateTime CreationDate { get; set; }
+		public DateTime? LastLoginDate { get; set; }
 		public IList<string> Roles { get; set; }
 		
 		public string PasswordQuestion { get; set; }
@@ -25,11 +25,11 @@ namespace RavenDBMembership
         /// </summary>
         public bool IsOnline {
             get { 
-                return (LastSeenOnline.AddMinutes(20) > DateTime.Now);
+                return (LastActivityDate.AddMinutes(20) > DateTime.Now);
             } 
         }
 
-	    public DateTime LastSeenOnline { get; set; }
+	    public DateTime LastActivityDate { get; set; }
 
         public int FailedPasswordAttempts { get; set; }
         public int FailedPasswordAnswerAttempts { get; set; }
