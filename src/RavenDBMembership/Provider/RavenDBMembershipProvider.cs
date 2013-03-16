@@ -37,7 +37,6 @@ namespace RavenDBMembership.Provider
         private string _passwordStrengthRegularExpression;
         private bool _enablePasswordReset;
         private bool _requiresQuestionAndAnswer;
-        private bool _requiresUniqueEmail;
         private MembershipPasswordFormat _passwordFormat;
         private string _hashAlgorithm;
         private string _validationKey;
@@ -95,7 +94,7 @@ namespace RavenDBMembership.Provider
 
         public override bool RequiresUniqueEmail
         {
-            get { return _requiresUniqueEmail; }
+            get { return true; }
         }
 
         #endregion
@@ -144,7 +143,14 @@ namespace RavenDBMembership.Provider
             }
         }
 
-
+        /// <summary>
+        /// Changes password of a user with given username.
+        /// Throws MembershipPasswordException is user not found or old password does not match
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="oldPassword"></param>
+        /// <param name="newPassword"></param>
+        /// <returns>true on success</returns>
         public override bool ChangePassword(string username, string oldPassword, string newPassword)
         {
             ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, false);
@@ -250,23 +256,18 @@ namespace RavenDBMembership.Provider
             user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : EncodePassword(passwordAnswer, user.PasswordSalt);
             user.IsApproved = isApproved;
             user.IsLockedOut = false;
-            user.IsOnline = false;
+            user.LastSeenOnline = DateTime.Now;
 
             using (var session = DocumentStore.OpenSession())
             {
-                if (RequiresUniqueEmail)
+                var existingUser = session.Query<User>()
+                    .FirstOrDefault(u => (u.Email == email || u.Username == username) && u.ApplicationName == ApplicationName);
+
+                if (existingUser != null)
                 {
-                    var existingUser = session.Query<User>()
-                        .FirstOrDefault(x => (x.Email == email || x.Username == username) && x.ApplicationName == ApplicationName);
-
-                    if (existingUser != null)
-                    {
-                        status = existingUser.Email == email ? MembershipCreateStatus.DuplicateEmail : MembershipCreateStatus.DuplicateUserName;
-
-                        return null;
-                    }
+                    status = existingUser.Email == email ? MembershipCreateStatus.DuplicateEmail : MembershipCreateStatus.DuplicateUserName;
+                    return null;
                 }
-
 
                 session.Store(user);
                 session.SaveChanges();
@@ -380,12 +381,6 @@ namespace RavenDBMembership.Provider
         }
 
 
-        /// <summary>
-        /// Gets information from the data source for a user. Provides an option to update the last-activity date/time stamp for the user.
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="updateLastSeenTimestamp"></param>
-        /// <returns></returns>
         public override MembershipUser GetUser(string username, bool updateLastSeenTimestamp)
         {
             using (var session = _documentStore.OpenSession())
@@ -395,7 +390,6 @@ namespace RavenDBMembership.Provider
 
                 if (user == null)
                 {
-                    //throw new ProviderException("User with this username does not exist");
                     return null;
                 }
 
@@ -418,7 +412,6 @@ namespace RavenDBMembership.Provider
                 var user = session.Load<User>(providerUserKey.ToString());
                 if (user == null)
                 {
-                    //throw new ProviderException("User with this username does not exist");
                     return null;
                 }
 
@@ -433,7 +426,6 @@ namespace RavenDBMembership.Provider
         }
 
 
-        //TODO keep reviewing form here
 
         public override string GetUserNameByEmail(string email)
         {
@@ -446,10 +438,13 @@ namespace RavenDBMembership.Provider
             }
         }
 
+        //TODO keep reviewing form here
         public override string ResetPassword(string username, string answer)
         {
             if (!EnablePasswordReset)
+            {
                 throw new ProviderException("Password reset is not enabled.");
+            }
 
             using (var session = DocumentStore.OpenSession())
             {
@@ -461,8 +456,9 @@ namespace RavenDBMembership.Provider
                     var user = q.SingleOrDefault();
                     if (user == null)
                     {
-                        throw new HttpException("The user to reset the password for could not be found.");
+                        throw new ProviderException("The user could not be found.");
                     }
+
                     if (user.PasswordAnswer != EncodePassword(answer, user.PasswordSalt))
                     {
                         user.FailedPasswordAttempts++;
@@ -513,7 +509,6 @@ namespace RavenDBMembership.Provider
                 dbUser.Email = user.Email;
                 dbUser.DateCreated = user.CreationDate;
                 dbUser.DateLastLogin = user.LastLoginDate;
-                dbUser.IsOnline = user.IsOnline;
                 dbUser.IsApproved = user.IsApproved;
                 dbUser.IsLockedOut = user.IsLockedOut;
 
@@ -538,7 +533,7 @@ namespace RavenDBMembership.Provider
                 if (user.PasswordHash == EncodePassword(password, user.PasswordSalt))
                 {
                     user.DateLastLogin = DateTime.Now;
-                    user.IsOnline = true;
+                    user.LastSeenOnline = DateTime.Now;
                     user.FailedPasswordAttempts = 0;
                     user.FailedPasswordAnswerAttempts = 0;
                     session.SaveChanges();
@@ -631,26 +626,6 @@ namespace RavenDBMembership.Provider
                 , user.DateCreated, user.DateLastLogin.HasValue ? user.DateLastLogin.Value : new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1));
         }
 
-        /// <summary>
-        /// Finds instance of User by username, sets if user is online or offline,
-        /// updates record for the user in the DB and returns an instance of the User
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="updateLastSeenTimestamp"></param>
-        /// <returns>Instance of user, matching by username</returns>
-        private User GetRavenDbUser(string username, bool updateLastSeenTimestamp)
-        {
-            using (var session = _documentStore.OpenSession())
-            {
-                var q = from u in session.Query<User>()
-                        where u.Username == username && u.ApplicationName == ApplicationName
-                        select u;
-                var user = q.SingleOrDefault();
-                user.IsOnline = updateLastSeenTimestamp;
-                session.SaveChanges();
-                return user;
-            }
-        }
 
         private void SaveRavenUser(User user)
         {
@@ -678,7 +653,11 @@ namespace RavenDBMembership.Provider
             }
 
             _requiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"));
-            _requiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"));
+            var requiresUniqueEmail = Convert.ToBoolean(GetConfigValue(config["requiresUniqueEmail"], "true"));
+            if (!requiresUniqueEmail)
+            {
+                throw new ProviderException("Provider can not operate with non-unique emails. Please set RequireUniqueEmail to true");
+            }
         }
 
         private void InitPasswordEncryptionSettings(NameValueCollection config)

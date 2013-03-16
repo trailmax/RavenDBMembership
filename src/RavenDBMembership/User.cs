@@ -16,14 +16,19 @@ namespace RavenDBMembership
 		public DateTime? DateLastLogin { get; set; }
 		public IList<string> Roles { get; set; }
 		
-		#region Extended User
-
 		public string PasswordQuestion { get; set; }
 		public string PasswordAnswer { get; set; }
 		public bool IsLockedOut { get; set; }		
 
-        [Obsolete("isOnline does not make any sense here. Please use LastSeenOnline")]
-		public bool IsOnline { get; set; }
+        /// <summary>
+        /// Returns true if user was seen online within last 20 minutes.
+        /// </summary>
+        public bool IsOnline {
+            get { 
+                return (LastSeenOnline.AddMinutes(20) > DateTime.Now);
+            } 
+        }
+
 	    public DateTime LastSeenOnline { get; set; }
 
         public int FailedPasswordAttempts { get; set; }
@@ -31,8 +36,6 @@ namespace RavenDBMembership
         public DateTime LastFailedPasswordAttempt { get; set; }
 		public string Comment { get; set; }
         public bool IsApproved { get; set; }
-
-		#endregion
 
 		public User()
 		{
