@@ -1,10 +1,12 @@
-﻿using Raven.Client.Embedded;
+﻿using Raven.Client;
+using Raven.Client.Document;
+using Raven.Client.Embedded;
 
 namespace RavenDBMembership.Tests
 {
 	public abstract class InMemoryStoreTestcase
 	{
-		protected EmbeddableDocumentStore NewInMemoryStore()
+		protected IDocumentStore InMemoryStore()
 		{
 			var documentStore = new EmbeddableDocumentStore
 			{
@@ -13,5 +15,12 @@ namespace RavenDBMembership.Tests
 			documentStore.Initialize();
 			return documentStore;
 		}
+
+        protected IDocumentStore LocalHostStore()
+        {
+            var documentStore = new DocumentStore() { Url = "http://localhost:8080", DefaultDatabase = "TestDB" };
+            documentStore.Initialize();
+            return documentStore;
+        }
 	}
 }

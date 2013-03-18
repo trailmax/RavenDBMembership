@@ -1,4 +1,6 @@
 ﻿// ReSharper disable InconsistentNaming
+
+using System.Configuration.Provider;
 using NUnit.Framework;
 using Raven.Client;
 using Raven.Client.Document;
@@ -25,15 +27,25 @@ namespace RavenDBMembership.Tests
         {
             _provider = new RavenDBMembershipProvider();
             RavenDBMembershipProvider.DocumentStore = null;
-            RavenDBMembershipProvider.DocumentStore = NewInMemoryStore();
-                       
+            RavenDBMembershipProvider.DocumentStore = InMemoryStore();
+            //RavenDBMembershipProvider.DocumentStore = LocalHostStore();
+            
         }
 
         [TearDown]
         public void TearDown()
         {
-            if (RavenDBMembershipProvider.DocumentStore != null)
-                RavenDBMembershipProvider.DocumentStore.Dispose();
+            try
+            {
+                if (RavenDBMembershipProvider.DocumentStore != null)
+                {
+                    RavenDBMembershipProvider.DocumentStore.Dispose();
+                }
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
         }
 
         #region GetValuesFromConfigTests
@@ -207,7 +219,6 @@ namespace RavenDBMembership.Tests
         }
 
         [Test]
-        [ExpectedException("System.Configuration.Provider.ProviderException")]
         public void EnableEmbeddableDocumentStore_should_throw_exception_if_not_set()
         {
             //Arrange                                       
@@ -216,7 +227,14 @@ namespace RavenDBMembership.Tests
             RavenDBMembershipProvider.DocumentStore = null;
 
             //Act
-            _provider.Initialize("TestApp", config);            
+            try
+            {
+                _provider.Initialize("TestApp", config);
+            }
+            catch (Exception exception)
+            {
+                Assert.IsInstanceOf(typeof(ProviderException), exception);
+            }
         }
 
         [Test]        
@@ -335,6 +353,8 @@ namespace RavenDBMembership.Tests
 			// Arrange
 			MembershipCreateStatus status;
 			var membershipUser = _provider.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
+            Assert.AreEqual(MembershipCreateStatus.Success, status);
+            Assert.NotNull(membershipUser);
 
 			// Act
 			_provider.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");

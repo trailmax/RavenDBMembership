@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Web.Security;
 using Raven.Client;
@@ -7,6 +8,8 @@ using System.Collections.Specialized;
 using System.Configuration.Provider;
 using System.Web.Configuration;
 using System.Diagnostics;
+using Raven.Client.Document;
+using Raven.Client.Embedded;
 
 
 namespace RavenDBMembership.Provider
@@ -143,17 +146,18 @@ namespace RavenDBMembership.Provider
             {
                 throw new MembershipPasswordException("The new password is not valid.");
             }
+            //Do not need to track invalid password attempts here because they will be picked up in ValidateUser
+            if (!ValidateUser(username, oldPassword))
+            {
+                throw new MembershipPasswordException(
+                    "Invalid username or old password. You must supply valid credentials to change your password.");
+            }
+
             using (var session = DocumentStore.OpenSession())
             {
                 var user = (from u in session.Query<User>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
-                //Do not need to track invalid password attempts here because they will be picked up in ValidateUser
-                if (!ValidateUser(username, oldPassword))
-                {
-                    throw new MembershipPasswordException(
-                        "Invalid username or old password. You must supply valid credentials to change your password.");
-                }
 
                 user.PasswordHash = EncodePassword(newPassword, user.PasswordSalt);
                 session.SaveChanges();
@@ -508,7 +512,7 @@ namespace RavenDBMembership.Provider
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
 
-                if (user == null || user.IsLockedOut || user.IsApproved)
+                if (user == null || user.IsLockedOut || !user.IsApproved)
                 {
                     return false;
                 }

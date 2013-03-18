@@ -24,7 +24,7 @@ namespace RavenDBMembership.Tests
 		{
 			var newRole = new Role("Users", null);
 
-			using (var store = NewInMemoryStore())
+			using (var store = InMemoryStore())
 			{
 				using (var session = store.OpenSession())
 				{
@@ -49,7 +49,7 @@ namespace RavenDBMembership.Tests
 			var newRole = new Role("Users", null);
 			newRole.ApplicationName = _appName;
 
-			using (var store = NewInMemoryStore())
+			using (var store = InMemoryStore())
 			{
 				using (var session = store.OpenSession())
 				{
@@ -74,7 +74,7 @@ namespace RavenDBMembership.Tests
 			var parentRole = new Role("Users", null);
 			var childRole = new Role("Contributors", parentRole);
 
-			using (var store = NewInMemoryStore())
+			using (var store = InMemoryStore())
 			{
 				using (var session = store.OpenSession())
 				{
@@ -101,7 +101,7 @@ namespace RavenDBMembership.Tests
 			var newRole = _testRoles[0];
 			newRole.ApplicationName = _appName;
 
-			using (var store = NewInMemoryStore())
+			using (var store = InMemoryStore())
 			{
 				using (var session = store.OpenSession())
 				{
@@ -129,7 +129,7 @@ namespace RavenDBMembership.Tests
 			user.Username = _testUserName;
             user.ApplicationName = _appName;
 
-            using (var store = NewInMemoryStore())
+            using (var store = InMemoryStore())
 			{
                 store.Initialize();
 				using (var session = store.OpenSession())
@@ -167,7 +167,7 @@ namespace RavenDBMembership.Tests
 			user.Username = _testUserName;
             user.ApplicationName = _appName;
 
-			using (var store = NewInMemoryStore())
+			using (var store = InMemoryStore())
 			{
                 //Arrange
 				using (var session = store.OpenSession())
@@ -211,7 +211,7 @@ namespace RavenDBMembership.Tests
             user.Username = _testUserName;
             user.ApplicationName = _appName;
 
-            using (var store = NewInMemoryStore())
+            using (var store = InMemoryStore())
             {
                 //Arrange
                 store.Initialize();
@@ -251,7 +251,7 @@ namespace RavenDBMembership.Tests
             user.Username = _testUserName;
             user.ApplicationName = _appName;
 
-            using (var store = NewInMemoryStore())
+            using (var store = InMemoryStore())
             {
                 store.Initialize();
                 using (var session = store.OpenSession())
