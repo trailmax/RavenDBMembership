@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Raven.Client;
-using Raven.Client.Embedded;
+﻿using Raven.Client.Embedded;
 
 namespace RavenDBMembership.Tests
 {

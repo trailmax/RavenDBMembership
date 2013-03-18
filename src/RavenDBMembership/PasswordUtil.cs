@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 using CryptSharp;
+using CryptSharp.Utility;
 
 namespace RavenDBMembership
 {
@@ -9,7 +10,12 @@ namespace RavenDBMembership
     {
         public static string CreateRandomSalt()
         {
-            return Crypter.Blowfish.GenerateSalt(128);
+            var rng = new RNGCryptoServiceProvider();
+            var saltBytes = new byte[32];
+            rng.GetBytes(saltBytes);
+
+            var str = new String(UnixBase64.Encode(saltBytes));
+            return str;
         }
 
         public static string HashPassword(string pass, string salt)
@@ -19,10 +25,10 @@ namespace RavenDBMembership
             const int cost = 512; // cost of the algorithm - how many time we go round. Must be power of 2
             const int blockSize = 8;    
             const int parallel = 16;    // maximum number of threads to use. 
-            CryptSharp.Utility.SCrypt.ComputeKey(Encoding.ASCII.GetBytes(pass), Encoding.ASCII.GetBytes(salt), cost, blockSize, parallel, null, derivedBytes);
+            SCrypt.ComputeKey(Encoding.Unicode.GetBytes(pass), Encoding.Unicode.GetBytes(salt), cost, blockSize, parallel, null, derivedBytes);
 
-            return derivedBytes.ToString();
-
+            var hashPassword = new string(UnixBase64.Encode(derivedBytes));
+            return hashPassword;
         }
     }
 }

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using NUnit.Framework;
 using RavenDBMembership.Provider;
+using System.Linq;
 using System.Threading;
-using NUnit.Framework;
-using Raven.Client.Document;
 
 namespace RavenDBMembership.Tests
 {

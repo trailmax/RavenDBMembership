@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Configuration;
-using System.Data.Linq;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Web.Configuration;
-using System.Web.Security;
-using System.Xml;
+﻿// ReSharper disable InconsistentNaming
 using NUnit.Framework;
 using Raven.Client;
-using RavenDBMembership.Provider;
-using Rhino.Mocks;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
+using RavenDBMembership.Provider;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Threading;
+using System.Web.Security;
 
 
 
@@ -23,19 +18,7 @@ namespace RavenDBMembership.Tests
     [TestFixture]
 	public class UserTests : InMemoryStoreTestcase
     {
-        private string _hashAlgorithm;
-        private string _validationKey;
         private RavenDBMembershipProvider _provider;
-
-        public UserTests()
-        {
-            System.Configuration.Configuration cfg = 
-                WebConfigurationManager.OpenWebConfiguration(
-                System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath);
-            MachineKeySection machineKey = cfg.GetSection("system.web/machineKey") as MachineKeySection;
-            _hashAlgorithm = machineKey.ValidationAlgorithm;
-            _validationKey = machineKey.ValidationKey;
-        }
 
         [SetUp]
         public void Setup()
@@ -76,7 +59,9 @@ namespace RavenDBMembership.Tests
         }
 
         [Test]
+
         public void EnablePasswordRetrievel_should_return_true_from_config()
+
         {
             
             _provider.Initialize("RavenTest", CreateConfigFake());
@@ -177,7 +162,7 @@ namespace RavenDBMembership.Tests
 		[Test]
 		public void StoreUserShouldCreateId()
 		{
-			var newUser = new User { Username = "martijn", FullName = "Martijn Boland" };
+			var newUser = new User { Username = "dummyUser", FullName = "dummyUser Boland" };
 			var newUserIdPrefix = newUser.Id;
 
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, newUser);
@@ -189,12 +174,12 @@ namespace RavenDBMembership.Tests
 		public void CreateNewMembershipUserShouldCreateUserDocument()
 		{			
 			MembershipCreateStatus status;
-			var membershipUser = _provider.CreateUser("martijn", "1234ABCD", "martijn@boland.org", null, null, true, null, out status);
+			var membershipUser = _provider.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
 				
             Assert.AreEqual(MembershipCreateStatus.Success, status);
 			Assert.IsNotNull(membershipUser);
 			Assert.IsNotNull(membershipUser.ProviderUserKey);
-			Assert.AreEqual("martijn", membershipUser.UserName);
+			Assert.AreEqual("dummyUser", membershipUser.UserName);
 		
 		}
 
@@ -349,15 +334,15 @@ namespace RavenDBMembership.Tests
 		{	
 			// Arrange
 			MembershipCreateStatus status;
-			var membershipUser = _provider.CreateUser("martijn", "1234ABCD", "martijn@boland.org", null, null, true, null, out status);
+			var membershipUser = _provider.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
 
 			// Act
-			_provider.ChangePassword("martijn", "1234ABCD", "DCBA4321");
+			_provider.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");
             var o = -1;
-            var user = _provider.FindUsersByName("martijn", 0, 0 , out o);
+            var user = _provider.FindUsersByName("dummyUser", 0, 0 , out o);
 
 			// Assert
-			Assert.True(_provider.ValidateUser("martijn", "DCBA4321"));			
+			Assert.True(_provider.ValidateUser("dummyUser", "DCBA4321"));			
 		}
 
         [Test]
@@ -366,7 +351,7 @@ namespace RavenDBMembership.Tests
             // Arrange                
             MembershipCreateStatus status;
             User fakeUser = CreateUserFake();
-            string newQuestion = "MY NAME", newAnswer = "WILBY";
+            string newQuestion = "MY NAME", newAnswer = "John";
                 
                 
             _provider.Initialize(fakeUser.ApplicationName, CreateConfigFake());            
@@ -375,7 +360,7 @@ namespace RavenDBMembership.Tests
                 fakeUser.PasswordAnswer, fakeUser.IsApproved, null, out status);
 
             // Act
-            _provider.ChangePasswordQuestionAndAnswer("wilby", "1234ABCD", newQuestion, newAnswer);
+            _provider.ChangePasswordQuestionAndAnswer("John", "1234ABCD", newQuestion, newAnswer);
 
 
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
@@ -392,10 +377,10 @@ namespace RavenDBMembership.Tests
 			{
 				// Arrange
 				MembershipCreateStatus status;
-				var membershipUser = _provider.CreateUser("martijn", "1234ABCD", "martijn@boland.org", null, null, true, null, out status);                
+				var membershipUser = _provider.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);                
 
 				// Act
-				_provider.DeleteUser("martijn", true);
+				_provider.DeleteUser("dummyUser", true);
 
 				// Assert
                 Thread.Sleep(500);
@@ -555,6 +540,7 @@ namespace RavenDBMembership.Tests
 
 
             // Act and Assert				
+
             string password = _provider.GetPassword(user.Username, "NOANSWER");
         }
 
@@ -615,19 +601,19 @@ namespace RavenDBMembership.Tests
             //Arrange
             var config = CreateConfigFake();
             _provider.Initialize(config["applicationName"], config);
-            User wilby = null;
+            User John = null;
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
             {
-                wilby = CreateUserFake();
-                wilby.IsLockedOut = true;
+                John = CreateUserFake();
+                John.IsLockedOut = true;
 
-                session.Store(wilby);
+                session.Store(John);
                 session.SaveChanges();
             }
 
             //Act
-            bool results = _provider.UnlockUser(wilby.Username);
-            var updatedUser = GetUserFromDocumentStore(RavenDBMembershipProvider.DocumentStore, wilby.Username);
+            bool results = _provider.UnlockUser(John.Username);
+            var updatedUser = GetUserFromDocumentStore(RavenDBMembershipProvider.DocumentStore, John.Username);
 
             //Assert 
             Assert.IsTrue(results);
@@ -665,7 +651,7 @@ namespace RavenDBMembership.Tests
             }
             for (int i = 0; i < 10; i++)
             {
-                _provider.ValidateUser("wilby", "wrongpassword");
+                _provider.ValidateUser("John", "wrongpassword");
             }
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
             {
@@ -693,7 +679,7 @@ namespace RavenDBMembership.Tests
             }
             for (int i = 0; i < 10; i++)
             {
-                _provider.ValidateUser("wilby", "wrongpassword");
+                _provider.ValidateUser("John", "wrongpassword");
             }
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
             {
@@ -771,14 +757,14 @@ namespace RavenDBMembership.Tests
             NameValueCollection config = new NameValueCollection(); 
             config.Add("applicationName", "TestApp"); 
             config.Add("enablePasswordReset", "true"); 
-            config.Add("enablePasswordRetrieval", "true"); 
+            config.Add("enablePasswordRetrieval", "false"); 
             config.Add("maxInvalidPasswordAttempts", "5");
             config.Add("minRequiredAlphaNumericCharacters", "2"); 
             config.Add("minRequiredPasswordLength", "8"); 
             config.Add("requiresQuestionAndAnswer", "true"); 
             config.Add("requiresUniqueEmail", "true"); 
             config.Add("passwordAttemptWindow", "10");
-            config.Add("passwordFormat", "Encrypted");
+            config.Add("passwordFormat", "Hashed");
             config.Add("connectionStringName", "Server");
             config.Add("enableEmbeddableDocumentStore", "true");
             return config; 
@@ -788,10 +774,10 @@ namespace RavenDBMembership.Tests
         {
             return new User()
             {
-                Username = "wilby",
+                Username = "John",
                 PasswordHash = "1234ABCD",
                 PasswordSalt = PasswordUtil.CreateRandomSalt(),
-                Email = "wilby@wcjj.net",
+                Email = "John@wcjj.net",
                 PasswordQuestion = "A QUESTION",
                 PasswordAnswer = "A ANSWER",                
                 LastActivityDate = DateTime.Now,
@@ -801,10 +787,11 @@ namespace RavenDBMembership.Tests
                 CreationDate = DateTime.Now,
                 LastLoginDate = DateTime.Now,
                 FailedPasswordAttempts = 0,
-                FullName = "Wilby Jackson",
+                FullName = "John Jackson",
                 IsLockedOut = false
             };
         }
 	}
 }
 
+// ReSharper restore InconsistentNaming
