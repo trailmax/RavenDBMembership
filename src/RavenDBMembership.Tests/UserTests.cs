@@ -1,40 +1,33 @@
-﻿// ReSharper disable InconsistentNaming
-
+﻿using System.Collections.Specialized;
 using System.Configuration.Provider;
 using NUnit.Framework;
-using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
 using RavenDBMembership.Provider;
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Threading;
 using System.Web.Security;
 
 
 
+// ReSharper disable InconsistentNaming
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
     public class UserTests : InMemoryStoreTestcase
     {
-
         [Test]
-        public void RequiresUniqueEmail_and_user_exists_CreateUser_returns_null_w_status_of_duplicateEmail()
+        public void OnUserCrate_Checks_duplicate_email()
         {
             //Arrange
-            var config = CreateConfigFake();
             var existingUser = CreateUserFake();
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
             MembershipCreateStatus status;
             Provider.Initialize("RavenTest", CreateConfigFake());
 
             //Act
-            var newUser = Provider.CreateUser(existingUser.Username, existingUser.PasswordHash,
-                existingUser.Email, existingUser.PasswordQuestion, existingUser.PasswordAnswer,
-                existingUser.IsApproved, null, out status);
+            var newUser = Provider.CreateUser("SomeOtherUsername", "password", existingUser.Email, "question", "Answer", true, null, out status);
 
             //Assert
             Assert.IsNull(newUser);
@@ -43,16 +36,32 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void StoreUserShouldCreateId()
+        public void OnUserCrate_Checks_duplicate_username()
         {
-            var newUser = new User { Username = "dummyUser", FullName = "dummyUser Boland" };
-            var newUserIdPrefix = newUser.Id;
+            //Arrange
+            var existingUser = CreateUserFake();
+            AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
+            MembershipCreateStatus status;
+            Provider.Initialize("RavenTest", CreateConfigFake());
 
-            AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, newUser);
+            //Act
+            var newUser = Provider.CreateUser(existingUser.Username, "password", "some@email.com", "question", "Answer", true, null, out status);
 
-            Assert.AreEqual(newUserIdPrefix + "1", newUser.Id);
+            //Assert
+            Assert.IsNull(newUser);
+            Assert.AreEqual(MembershipCreateStatus.DuplicateUserName, status);
         }
 
+
+        //TODO create user tests:
+        // * if password reset is enabled and question/answer is required, throw exception if these are not provided
+        // * minimum password requirements
+        // * actually create user with success
+        // * check that created user has hashed password and it can be validated
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        
         [Test]
         public void CreateNewMembershipUserShouldCreateUserDocument()
         {
@@ -139,38 +148,7 @@ namespace RavenDBMembership.Tests
             Assert.IsTrue(RavenDBMembershipProvider.DocumentStore.GetType() == typeof(DocumentStore));
         }
 
-        //TODO fix the test
-        //        [Test(Description=@"In order for this test to pass, you must copy the machine key element from the app.config in this test project
-        //        to the machine.config in the appropriate framework version. This is so that algorithm info grabbed by the 
-        //        membership provider matches what is in this test. You cannot use AutoGen for the validation and decryption keys.")]
-        //        public void CreatedUser_should_have_hashed_password_and_password_answer()
-        //        {            
-        //            //Arrange
-        //            User fakeU = CreateUserFake();
-        //            NameValueCollection nvc = CreateConfigFake();
-        //            nvc["passwordFormat"] = "Hashed";               
 
-        //            _provider.Initialize(fakeU.ApplicationName, nvc);            
-        //            MembershipCreateStatus status;
-
-        //            //Act
-        //            var membershipUser = _provider.CreateUser(fakeU.Username, fakeU.PasswordHash,
-        //                fakeU.Email, fakeU.PasswordQuestion, fakeU.PasswordAnswer,
-        //                fakeU.IsApproved, null, out status);
-        //            User createdUser;
-        //            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
-        //            {
-        //                createdUser = session.Load<User>(membershipUser.ProviderUserKey.ToString());
-        //            }
-        //            string expected = PasswordUtil.HashPassword(fakeU.PasswordHash, createdUser.PasswordSalt, "HMACSHA256", _validationKey );
-        //            string expectedAnswer = PasswordUtil.HashPassword(fakeU.PasswordAnswer, createdUser.PasswordSalt, "HMACSHA256", _validationKey);
-
-        //            //Assert
-
-        //            Assert.AreEqual(expected, createdUser.PasswordHash);
-        //            Assert.AreEqual(expectedAnswer, createdUser.PasswordAnswer);               
-
-        //        }
 
         [Test]
         public void ValidateUserTest_should_return_false_if_username_is_null_or_empty()

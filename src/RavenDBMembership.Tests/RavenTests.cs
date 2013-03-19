@@ -117,5 +117,21 @@ namespace RavenDBMembership.Tests
             }
         }
 
+
+        [Test]
+        public void StoreUserShouldCreateId()
+        {
+            var newUser = new User { Username = "dummyUser", FullName = "dummyUser Boland" };
+            var newUserIdPrefix = newUser.Id;
+
+            using (var session = _documentStore.OpenSession())
+            {
+                session.Store(newUser);
+                session.SaveChanges();
+            }
+
+
+            Assert.AreEqual(newUserIdPrefix + "1", newUser.Id);
+        }
     }
 }

@@ -52,12 +52,9 @@ namespace RavenDBMembership.Tests
         {
             try
             {
-                if (RavenDBMembershipProvider.DocumentStore != null)
-                {
-                    RavenDBMembershipProvider.DocumentStore.Dispose();
-                }
+                RavenDBMembershipProvider.DocumentStore.Dispose();
             }
-            catch (Exception)
+            catch
             {
                 // ignore
             }
@@ -89,7 +86,7 @@ namespace RavenDBMembership.Tests
 	                       Username = "John",
 	                       PasswordHash = "1234ABCD",
 	                       PasswordSalt = PasswordUtil.CreateRandomSalt(),
-	                       Email = "John@wcjj.net",
+	                       Email = "John@world.net",
 	                       PasswordQuestion = "A QUESTION",
 	                       PasswordAnswer = "AN ANSWER",                
 	                       LastActivityDate = DateTime.Now,
@@ -134,7 +131,7 @@ namespace RavenDBMembership.Tests
             }
         }
 
-	    protected IList<User> CreateDummyUsers(int numberOfUsers)
+	    protected List<User> CreateDummyUsers(int numberOfUsers)
         {
             var users = new List<User>(numberOfUsers);
             for (int i = 0; i < numberOfUsers; i++)
