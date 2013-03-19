@@ -18,6 +18,7 @@ namespace RavenDBMembership.Tests
         }
 
 
+
         [Test]
         public void CheckSaltLength()
         {

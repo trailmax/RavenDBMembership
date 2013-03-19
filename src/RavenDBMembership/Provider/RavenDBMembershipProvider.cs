@@ -91,10 +91,10 @@ namespace RavenDBMembership.Provider
         {
             get
             {
-                if (_documentStore == null)
-                {
-                    throw new NullReferenceException("The DocumentStore is not set. Please set the DocumentStore or make sure that the Common Service Locator can find the IDocumentStore and call Initialize on this provider.");
-                }
+                //if (_documentStore == null)
+                //{
+                //    throw new NullReferenceException("The DocumentStore is not set. Please set the DocumentStore or make sure that the Common Service Locator can find the IDocumentStore and call Initialize on this provider.");
+                //}
                 return _documentStore;
             }
             set { _documentStore = value; }
@@ -103,16 +103,16 @@ namespace RavenDBMembership.Provider
 
         #region Overriden Public Functions
 
-        public override void Initialize(string name, NameValueCollection config)
+        public override void Initialize(string providerName, NameValueCollection config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException("There are no membership configuration settings.");
             }
 
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(providerName))
             {
-                name = "RavenDBMembershipProvider";
+                providerName = "RavenDBMembershipProvider";
             }
 
             if (string.IsNullOrEmpty(config["description"]))
@@ -120,13 +120,44 @@ namespace RavenDBMembership.Provider
                 config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
             }
 
-            base.Initialize(name, config);
+            base.Initialize(providerName, config);
 
             InitConfigSettings(config);
 
             if (_documentStore == null)
             {
                 _documentStore = RavenInitialiser.InitialiseDocumentStore(config);
+                //string connectionStringName = config["connectionStringName"];
+
+                //string conString = ConfigurationManager.ConnectionStrings[connectionStringName].ConnectionString;
+
+                //if (string.IsNullOrEmpty(conString))
+                //{
+                //    throw new ProviderException("The connection string name must be set.");
+                //}
+
+                //if (string.IsNullOrEmpty(config["enableEmbeddableDocumentStore"]))
+                //{
+                //    throw new ProviderException("RavenDB can run as a service or embedded mode, you must set enableEmbeddableDocumentStore in the web.config.");
+                //}
+
+                //bool embeddedStore = Convert.ToBoolean(config["enableEmbeddableDocumentStore"]);
+
+                //if (embeddedStore)
+                //{
+                //    _documentStore = new EmbeddableDocumentStore()
+                //    {
+                //        ConnectionStringName = connectionStringName
+                //    };
+                //}
+                //else
+                //{
+                //    _documentStore = new DocumentStore()
+                //    {
+                //        ConnectionStringName = connectionStringName
+                //    };
+                //}
+                //_documentStore.Initialize();
             }
         }
 
@@ -508,9 +539,15 @@ namespace RavenDBMembership.Provider
 
             using (var session = DocumentStore.OpenSession())
             {
+                //var userLoaded = session.Load<User>("authorization/users/1");
+
                 var user = (from u in session.Query<User>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
+                //var user = session.Query<User>().SingleOrDefault(u => u.Username == username && u.ApplicationName == this.ApplicationName);
+                //var userLinq2 = session.Query<User>().Where(u => u.Username == userLoaded.Username).Select(u => u).ToList();
+                
+
 
                 if (user == null || user.IsLockedOut || !user.IsApproved)
                 {
