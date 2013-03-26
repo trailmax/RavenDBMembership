@@ -6,7 +6,7 @@ using System.Threading;
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
-	public class RoleTests : InMemoryStoreTestcase
+	public class RoleTests : AbstractTestBase
 	{
         private string _appName = "MyApplication";
         private Role[] _testRoles = new Role[] { new Role("Role 1", null), new Role("Role 2", null), new Role("Role 3", null) };

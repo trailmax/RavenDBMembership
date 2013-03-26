@@ -127,37 +127,6 @@ namespace RavenDBMembership.Provider
             if (_documentStore == null)
             {
                 _documentStore = RavenInitialiser.InitialiseDocumentStore(config);
-                //string connectionStringName = config["connectionStringName"];
-
-                //string conString = ConfigurationManager.ConnectionStrings[connectionStringName].ConnectionString;
-
-                //if (string.IsNullOrEmpty(conString))
-                //{
-                //    throw new ProviderException("The connection string name must be set.");
-                //}
-
-                //if (string.IsNullOrEmpty(config["enableEmbeddableDocumentStore"]))
-                //{
-                //    throw new ProviderException("RavenDB can run as a service or embedded mode, you must set enableEmbeddableDocumentStore in the web.config.");
-                //}
-
-                //bool embeddedStore = Convert.ToBoolean(config["enableEmbeddableDocumentStore"]);
-
-                //if (embeddedStore)
-                //{
-                //    _documentStore = new EmbeddableDocumentStore()
-                //    {
-                //        ConnectionStringName = connectionStringName
-                //    };
-                //}
-                //else
-                //{
-                //    _documentStore = new DocumentStore()
-                //    {
-                //        ConnectionStringName = connectionStringName
-                //    };
-                //}
-                //_documentStore.Initialize();
             }
         }
 

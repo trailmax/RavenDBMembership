@@ -7,10 +7,11 @@ using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
 using RavenDBMembership.Provider;
+using RavenDBMembership.Tests.TestHelpers;
 
 namespace RavenDBMembership.Tests
 {
-	public abstract class InMemoryStoreTestcase
+	public abstract class AbstractTestBase
 	{
 	    protected RavenDBMembershipProvider Provider;
 
@@ -60,52 +61,11 @@ namespace RavenDBMembership.Tests
             }
         }
 
-	    protected static NameValueCollection CreateConfigFake() { 
-	        NameValueCollection config = new NameValueCollection
-	                                         {
-	                                             {"applicationName", "TestApp"},
-	                                             {"enablePasswordReset", "true"},
-	                                             {"enablePasswordRetrieval", "false"},
-	                                             {"maxInvalidPasswordAttempts", "5"},
-	                                             {"minRequiredAlphaNumericCharacters", "2"},
-	                                             {"minRequiredPasswordLength", "8"},
-	                                             {"requiresQuestionAndAnswer", "true"},
-	                                             {"requiresUniqueEmail", "true"},
-	                                             {"passwordAttemptWindow", "10"},
-	                                             {"passwordFormat", "Hashed"},
-	                                             {"connectionStringName", "Server"},
-	                                             {"enableEmbeddableDocumentStore", "true"}
-	                                         };
-	        return config; 
-	    }
-
-	    protected User CreateUserFake()
-	    {
-	        return new User()
-	                   {
-	                       Username = "John",
-	                       PasswordHash = "1234ABCD",
-	                       PasswordSalt = PasswordUtil.CreateRandomSalt(),
-	                       Email = "John@world.net",
-	                       PasswordQuestion = "A QUESTION",
-	                       PasswordAnswer = "AN ANSWER",                
-	                       LastActivityDate = DateTime.Now,
-	                       IsApproved = true,
-	                       Comment = "A FAKE USER",
-	                       ApplicationName = "TestApp",
-	                       CreationDate = DateTime.Now,
-	                       LastLoginDate = DateTime.Now,
-	                       FailedPasswordAttempts = 0,
-	                       FullName = "John Jackson",
-	                       IsLockedOut = false
-	                   };
-	    }
-
 	    protected User GetUserFromDocumentStore(IDocumentStore store, string username)
         {
             using (var session = store.OpenSession())
             {
-                return session.Query<User>().Where(x => x.Username == username).FirstOrDefault();
+                return session.Query<User>().FirstOrDefault(x => x.Username == username);
             }
         }
 

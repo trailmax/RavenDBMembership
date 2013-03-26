@@ -8,23 +8,23 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Web.Security;
-
+using RavenDBMembership.Tests.TestHelpers;
 
 
 // ReSharper disable InconsistentNaming
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
-    public class UserTests : InMemoryStoreTestcase
+    public class UserTests : AbstractTestBase
     {
         [Test]
         public void OnUserCrate_Checks_duplicate_email()
         {
             //Arrange
-            var existingUser = CreateUserFake();
+            var existingUser = new UserBuilder().Build();
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
             MembershipCreateStatus status;
-            Provider.Initialize("RavenTest", CreateConfigFake());
+            Provider.Initialize("RavenTest", new ConfigBuilder().Build());
 
             //Act
             var newUser = Provider.CreateUser("SomeOtherUsername", "password", existingUser.Email, "question", "Answer", true, null, out status);
@@ -39,10 +39,10 @@ namespace RavenDBMembership.Tests
         public void OnUserCrate_Checks_duplicate_username()
         {
             //Arrange
-            var existingUser = CreateUserFake();
+            var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
             MembershipCreateStatus status;
-            Provider.Initialize("RavenTest", CreateConfigFake());
+            Provider.Initialize("RavenTest", new ConfigBuilder().Build());
 
             //Act
             var newUser = Provider.CreateUser(existingUser.Username, "password", "some@email.com", "question", "Answer", true, null, out status);
@@ -79,8 +79,8 @@ namespace RavenDBMembership.Tests
         public void CreatedUser_should_have_encrypted_password_and_password_answer()
         {
             //Arrange
-            User fakeU = CreateUserFake();
-            Provider.Initialize(fakeU.ApplicationName, CreateConfigFake());
+            User fakeU = new UserBuilder().WithPassword("1234ABCD").Build();
+            Provider.Initialize(fakeU.ApplicationName, new ConfigBuilder().Build());
 
             var session = RavenDBMembershipProvider.DocumentStore.OpenSession();
             MembershipCreateStatus status;
@@ -102,8 +102,9 @@ namespace RavenDBMembership.Tests
         public void EnableEmbeddableDocumentStore_should_throw_exception_if_not_set()
         {
             //Arrange                                       
-            var config = CreateConfigFake();
-            config.Remove("enableEmbeddableDocumentStore");
+            var config = new ConfigBuilder()
+                .WithoutValue("enableEmbeddableDocumentStore").Build();
+
             RavenDBMembershipProvider.DocumentStore = null;
 
             //Act
@@ -121,8 +122,9 @@ namespace RavenDBMembership.Tests
         public void EnableEmbeddableDocumentStore_should_be_of_type_EmbeddableDocumentStore()
         {
             //Arrange                            
-            var config = CreateConfigFake();
-            config["enableEmbeddableDocumentStore"] = "true";
+            var config = new ConfigBuilder()
+                .WithValue("enableEmbeddableDocumentStore", "true").Build();
+
             RavenDBMembershipProvider.DocumentStore = null;
 
 
@@ -138,8 +140,9 @@ namespace RavenDBMembership.Tests
         public void EnableEmbeddableDocumentStore_should_be_of_type_DocumentStore()
         {
             //Arrange                            
-            var config = CreateConfigFake();
-            config["enableEmbeddableDocumentStore"] = "false";
+            var config = new ConfigBuilder()
+                .WithValue("enableEmbeddableDocumentStore","false").Build();
+
             RavenDBMembershipProvider.DocumentStore = null;
             //Act
             Provider.Initialize("TestApp", config);
@@ -162,8 +165,8 @@ namespace RavenDBMembership.Tests
         public void ResetPasswordTest_if_EnablePasswordReset_is_not_enabled_throws_exception()
         {
             //Arrange
-            var config = CreateConfigFake();
-            config.Replace("enablePasswordReset", "false");
+            var config = new ConfigBuilder()
+                .WithValue("enablePasswordReset", "false").Build();
 
             Provider.Initialize(config["applicationName"], config);
 
@@ -176,6 +179,11 @@ namespace RavenDBMembership.Tests
         [Test]
         public void ChangePassword()
         {
+            var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
+            AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
+            Provider.Initialize("RavenTest", new ConfigBuilder().Build());
+
+            
             // Arrange
             MembershipCreateStatus status;
             var membershipUser = Provider.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
@@ -196,11 +204,11 @@ namespace RavenDBMembership.Tests
         {
             // Arrange                
             MembershipCreateStatus status;
-            User fakeUser = CreateUserFake();
+            User fakeUser = new UserBuilder().WithPassword("1234ABCD").Build();
             string newQuestion = "MY NAME", newAnswer = "John";
 
 
-            Provider.Initialize(fakeUser.ApplicationName, CreateConfigFake());
+            Provider.Initialize(fakeUser.ApplicationName, new ConfigBuilder().Build());
 
             var membershipUser = Provider.CreateUser(fakeUser.Username, fakeUser.PasswordHash, fakeUser.Email, fakeUser.PasswordQuestion,
                 fakeUser.PasswordAnswer, fakeUser.IsApproved, null, out status);
@@ -337,12 +345,12 @@ namespace RavenDBMembership.Tests
         public void GetPasswordTest_Throws_NotSupportedException()
         {
             // Arrange                                                
-            var config = CreateConfigFake();
+            var config = new ConfigBuilder().Build();
 
-            Provider.Initialize(config["applicationName"], config);
-            var user = CreateUserFake();
+            Provider.Initialize("applicationName", config);
+            var user = new UserBuilder().WithPassword("1234ABCD").Build();
             MembershipCreateStatus status;
-            MembershipUser memUser = Provider.CreateUser(user.Username, user.PasswordHash, user.Email, user.PasswordQuestion, user.PasswordAnswer,
+            Provider.CreateUser(user.Username, user.PasswordHash, user.Email, user.PasswordQuestion, user.PasswordAnswer,
                 user.IsApproved, null, out status);
 
 
@@ -354,12 +362,12 @@ namespace RavenDBMembership.Tests
         public void UnlockUserTest_user_is_actually_unlocked_and_returns_true()
         {
             //Arrange
-            var config = CreateConfigFake();
-            Provider.Initialize(config["applicationName"], config);
+            var config = new ConfigBuilder().Build();
+            Provider.Initialize("applicationName", config);
             User John = null;
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
             {
-                John = CreateUserFake();
+                John = new UserBuilder().WithPassword("1234ABCD").Build();
                 John.IsLockedOut = true;
 
                 session.Store(John);
@@ -379,9 +387,9 @@ namespace RavenDBMembership.Tests
         public void UnlockUserTest_user_is_not_unlocked_returns_false()
         {
             //Arrange
-            var config = CreateConfigFake();
+            var config = new ConfigBuilder().Build();
 
-            Provider.Initialize(config["applicationName"], config);
+            Provider.Initialize("applicationName", config);
             //Act
             bool results = Provider.UnlockUser("NOUSER");
 
@@ -394,9 +402,11 @@ namespace RavenDBMembership.Tests
         public void IsLockedOut_test_true_when_failedPasswordAttempts_is_gt_maxPasswordAttempts()
         {
             //Arrange
-            var config = CreateConfigFake();
-            var user = CreateUserFake();
-            Provider.Initialize(config["applicationName"], config);
+            var config = new ConfigBuilder().Build();
+
+            var user = new UserBuilder().WithPassword("1234ABCD").Build();
+
+            Provider.Initialize("applicationName", config);
 
             //Act
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
@@ -421,10 +431,11 @@ namespace RavenDBMembership.Tests
         public void IsLockedOut_test_false_when_failedPasswordAttempts_is_gt_maxPasswordAttempts_and_passwordWindow_is_already_past()
         {
             //Arrange
-            var config = CreateConfigFake();
-            config["passwordAttemptWindow"] = "0";
-            var user = CreateUserFake();
-            Provider.Initialize(config["applicationName"], config);
+            var config = new ConfigBuilder().WithValue("passwordAttemptWindow", "0").Build();
+
+            var user = new UserBuilder().WithPassword("1234ABCD").Build();
+
+            Provider.Initialize("applicationName", config);
 
             //Act
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
