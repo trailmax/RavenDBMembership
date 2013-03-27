@@ -43,6 +43,8 @@ namespace RavenDBMembership
 			Id = "authorization/users/"; // db assigns id
 		}
 
+
+        // ToDO tests for password and question/answer
         public void SetPassword(String password)
         {
             this.PasswordHash = PasswordUtil.HashPassword(password, this.PasswordSalt);
