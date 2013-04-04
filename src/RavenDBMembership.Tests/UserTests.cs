@@ -11,14 +11,13 @@ using System.Web.Security;
 using RavenDBMembership.Tests.TestHelpers;
 
 
-// ReSharper disable InconsistentNaming
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
     public class UserTests : AbstractTestBase
     {
         [Test]
-        public void OnUserCrate_Checks_duplicate_email()
+        public void CreateUser_WithDuplicateEmail_ReturnsDuplicateEmailStatus()
         {
             //Arrange
             var existingUser = new UserBuilder().Build();
@@ -36,7 +35,7 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void OnUserCrate_Checks_duplicate_username()
+        public void CreateUser_WithDuplicateUsername_ReturnsDuplicateUsernameStatus()
         {
             //Arrange
             var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
@@ -63,38 +62,41 @@ namespace RavenDBMembership.Tests
 
         
         [Test]
-        public void CreateNewMembershipUserShouldCreateUserDocument()
+        public void CreateUser_CorrectInput_ShouldCreateUserRecord()
         {
             MembershipCreateStatus status;
-            var membershipUser = Provider.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
 
+            // act
+            var membershipUser = Provider.CreateUser("ValidateableUsername", "Anon", "anon@anon.com", null, null, true, null, out status);
+
+            // Assert
             Assert.AreEqual(MembershipCreateStatus.Success, status);
             Assert.IsNotNull(membershipUser);
             Assert.IsNotNull(membershipUser.ProviderUserKey);
-            Assert.AreEqual("dummyUser", membershipUser.UserName);
+            Assert.AreEqual("ValidateableUsername", membershipUser.UserName);
 
         }
 
         [Test]
-        public void CreatedUser_should_have_encrypted_password_and_password_answer()
+        public void CreateUser_CorrectInput_HashesPasswordAndSecurityAnser()
         {
             //Arrange
-            User fakeU = new UserBuilder().WithPassword("1234ABCD").Build();
-            Provider.Initialize(fakeU.ApplicationName, new ConfigBuilder().Build());
+            var user = new UserBuilder().WithPassword("1234ABCD").Build();
+            Provider.Initialize(user.ApplicationName, new ConfigBuilder().Build());
 
             var session = RavenDBMembershipProvider.DocumentStore.OpenSession();
             MembershipCreateStatus status;
 
             //Act
-            var membershipUser = Provider.CreateUser(fakeU.Username, fakeU.PasswordHash,
-                fakeU.Email, fakeU.PasswordQuestion, fakeU.PasswordAnswer,
-                fakeU.IsApproved, null, out status);
+            var membershipUser = Provider.CreateUser(user.Username, user.PasswordHash,
+                user.Email, user.PasswordQuestion, user.PasswordAnswer,
+                user.IsApproved, null, out status);
             User createdUser = session.Load<User>(membershipUser.ProviderUserKey.ToString());
 
             //Assert
             //Best I could think to do, not sure its possible to test encrypted strings for actual encryption
-            Assert.AreNotEqual(fakeU.PasswordHash, createdUser.PasswordHash);
-            Assert.AreNotEqual(fakeU.PasswordAnswer, createdUser.PasswordAnswer);
+            Assert.AreNotEqual(user.PasswordHash, createdUser.PasswordHash);
+            Assert.AreNotEqual(user.PasswordAnswer, createdUser.PasswordAnswer);
 
         }
 
@@ -481,5 +483,3 @@ namespace RavenDBMembership.Tests
 
     }
 }
-
-// ReSharper restore InconsistentNaming

@@ -16,8 +16,8 @@ namespace RavenDBMembership
 		public DateTime? LastLoginDate { get; set; }
 		public IList<string> Roles { get; set; }
 		
-		public string PasswordQuestion { get; private set; }
-		public string PasswordAnswer { get; private set; }
+		public string PasswordQuestion { get; set; }
+		public string PasswordAnswer { get; set; }
 		public bool IsLockedOut { get; set; }		
 
         /// <summary>
@@ -42,18 +42,5 @@ namespace RavenDBMembership
 			Roles = new List<string>();
 			Id = "authorization/users/"; // db assigns id
 		}
-
-
-        // ToDO tests for password and question/answer
-        public void SetPassword(String password)
-        {
-            this.PasswordHash = PasswordUtil.HashPassword(password, this.PasswordSalt);
-        }
-
-        public void SetQuestionAnswer(String question, String answer)
-        {
-            this.PasswordQuestion = question;
-            this.PasswordAnswer = PasswordUtil.HashPassword(answer, this.PasswordSalt);
-        }
 	}
 }

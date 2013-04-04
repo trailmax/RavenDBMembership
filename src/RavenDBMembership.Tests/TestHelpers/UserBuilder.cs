@@ -53,7 +53,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         public UserBuilder WithQuestionAnswer(String question, String answer)
         {
             user.PasswordQuestion = question;
-            user.PasswordAnswer = PasswordUtil.HashPassword(answer.ToLower(), user.PasswordHash);
+            user.PasswordAnswer = PasswordUtil.HashPassword(answer.ToLower(), user.PasswordSalt);
             return this;
         }
     }
@@ -98,21 +98,21 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void DifferentBuilders_resurn_different_objects()
+        public void DifferentBuilders_return_different_objects()
         {
             Assert.AreNotSame(new UserBuilder().Build(), new UserBuilder().Build());
         }
 
         [Test]
-        public void Builder_returns_questionAnser()
+        public void Builder_returns_questionAnswer()
         {
             const string question = "random";
             const string answer = "another random";
             var sut = new UserBuilder().WithQuestionAnswer(question, answer.ToLower()).Build();
 
             Assert.AreEqual(question, sut.PasswordQuestion);
-            var hashedAnswer = PasswordUtil.HashPassword(answer, sut.PasswordSalt);
-            Assert.AreEqual(hashedAnswer, sut.PasswordAnswer);
+            var expected = PasswordUtil.HashPassword(answer, sut.PasswordSalt);
+            Assert.AreEqual(expected, sut.PasswordAnswer);
         }
     }
 }
