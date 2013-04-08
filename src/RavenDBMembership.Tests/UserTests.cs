@@ -47,6 +47,8 @@ namespace RavenDBMembership.Tests
 
             MembershipCreateStatus status;
             Provider.Initialize(ProviderName, new ConfigBuilder().Build());
+            InjectProvider(Membership.Providers, Provider);
+
 
             //Act
             var newUser = Provider.CreateUser(Username, Password, existingUser.Email, PasswordQuestion, PasswordAnswer, true, null, out status);
@@ -88,6 +90,8 @@ namespace RavenDBMembership.Tests
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true).Build();
             Provider.Initialize(ProviderName, config);
+            InjectProvider(Membership.Providers, Provider);
+
 
             MembershipCreateStatus status;
             Assert.Throws<ProviderException>(
@@ -103,6 +107,8 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithMinimumPasswordLength(10).Build();
             Provider.Initialize(ProviderName, config);
+            InjectProvider(Membership.Providers, Provider);
+
 
             // Act
             MembershipCreateStatus status;
@@ -121,6 +127,7 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithMinNonAlfanumericCharacters(2).Build();
             Provider.Initialize(ProviderName, config);
+            InjectProvider(Membership.Providers, Provider);
 
             // Act
             MembershipCreateStatus status;
@@ -139,6 +146,7 @@ namespace RavenDBMembership.Tests
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
             Provider.Initialize(ProviderName, config);
+            InjectProvider(Membership.Providers, Provider);
 
             // Act
             MembershipCreateStatus status;
@@ -320,21 +328,21 @@ namespace RavenDBMembership.Tests
         [Test]
         public void DeleteUser()
         {
+            // Arrange
+            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
+            InjectProvider(Membership.Providers, Provider);
 
+            MembershipCreateStatus status;
+            var membershipUser = Provider.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
+
+            // Act
+            Provider.DeleteUser("dummyUser", true);
+
+            // Assert
+            Thread.Sleep(500);
+            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
             {
-                // Arrange
-                MembershipCreateStatus status;
-                var membershipUser = Provider.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
-
-                // Act
-                Provider.DeleteUser("dummyUser", true);
-
-                // Assert
-                Thread.Sleep(500);
-                using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
-                {
-                    Assert.AreEqual(0, session.Query<User>().Count());
-                }
+                Assert.AreEqual(0, session.Query<User>().Count());
             }
         }
 
@@ -459,6 +467,8 @@ namespace RavenDBMembership.Tests
             //Arrange
             var config = new ConfigBuilder().Build();
             Provider.Initialize("applicationName", config);
+            InjectProvider(Membership.Providers, Provider);
+
             User John = null;
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
             {
@@ -485,6 +495,8 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder().Build();
 
             Provider.Initialize("applicationName", config);
+            InjectProvider(Membership.Providers, Provider);
+
             //Act
             bool results = Provider.UnlockUser("NOUSER");
 
@@ -502,6 +514,8 @@ namespace RavenDBMembership.Tests
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
 
             Provider.Initialize("applicationName", config);
+            InjectProvider(Membership.Providers, Provider);
+
 
             //Act
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
@@ -531,6 +545,7 @@ namespace RavenDBMembership.Tests
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
 
             Provider.Initialize("applicationName", config);
+            InjectProvider(Membership.Providers, Provider);
 
             //Act
             using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())

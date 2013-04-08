@@ -61,6 +61,7 @@
     <Reference Include="System.Web.ApplicationServices" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RavenInitialiserTests.cs" />
     <Compile Include="TestHelpers\AbstractTestBase.cs" />
     <Compile Include="PasswordUtilityTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

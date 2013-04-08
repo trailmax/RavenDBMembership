@@ -8,44 +8,88 @@ using Raven.Client.Embedded;
 
 namespace RavenDBMembership
 {
-    public class RavenInitialiser
+    public static class RavenInitialiser
     {
-        public static IDocumentStore InitialiseDocumentStore(NameValueCollection config)
+        /// <summary>
+        /// Connection can be provided with a several ways:
+        /// 1. Connection string name = name of a connection string that is in your web.config/ConnectionStrings section
+        ///     if that is specified, all other ways to specify the connection are ignored.
+        /// 2. Provide connection Url without referencing the web.config: in config provide connectionUrl = "http://localhost:8080"
+        /// 3. Embedded Document storage. For that in config have "embedded=true" and provide "DataDirectory=path/to/DbDir"
+        /// 4. For testing only In-Memory mode. For that in config provide "inmemory=true"
+        /// </summary>
+        /// <param name="configCollection"></param>
+        /// <returns></returns>
+        public static IDocumentStore InitialiseDocumentStore(NameValueCollection configCollection)
         {
             IDocumentStore documentStore;
-            string connectionStringName = config["connectionStringName"];
 
-            string conString = ConfigurationManager.ConnectionStrings[connectionStringName].ConnectionString;
+            var config = new Configuration(configCollection);
 
-            if (string.IsNullOrEmpty(conString))
+            // Connection String Name
+            var connectionStringName = config.ConnectionStringName();
+            if (!String.IsNullOrEmpty(connectionStringName))
             {
-                throw new ProviderException("The connection string name must be set.");
-            }
-
-            if (string.IsNullOrEmpty(config["enableEmbeddableDocumentStore"]))
-            {
-                throw new ProviderException("RavenDB can run as a service or embedded mode, you must set enableEmbeddableDocumentStore in the web.config.");
-            }
-
-            bool embeddedStore = Convert.ToBoolean(config["enableEmbeddableDocumentStore"]);
-
-            if (embeddedStore)
-            {
-                documentStore = new EmbeddableDocumentStore()
+                var connectionString = ConfigurationManager.ConnectionStrings[connectionStringName].ConnectionString;
+                if (connectionString.ToLower().Contains("datadir"))
                 {
-                    ConnectionStringName = connectionStringName
-                };
+                    documentStore = new EmbeddableDocumentStore()
+                                        {
+                                            ConnectionStringName = connectionStringName,
+                                        };
+                }
+                else
+                {
+                    documentStore = new DocumentStore()
+                                        {
+                                            ConnectionStringName = connectionStringName
+                                        };
+                }
+
+                documentStore.Initialize();
+                return documentStore;
             }
-            else
+
+            // Connection URL provided
+            var connectionUrl = config.ConnectionUrl();
+            if (!String.IsNullOrEmpty(connectionUrl))
             {
                 documentStore = new DocumentStore()
-                {
-                    ConnectionStringName = connectionStringName
-                };
+                                        {
+                                            Url = connectionUrl,
+                                        };
+                documentStore.Initialize();
+                return documentStore;
             }
-            documentStore.Initialize();
 
-            return documentStore;
+
+            // Embedded storage
+            if (config.IsEmbedded())
+            {
+                if (String.IsNullOrEmpty(config.EmbeddedDataDirectory()))
+                {
+                    throw new ConfigurationErrorsException("For Embedded Mode please provide DataDir parameter with address where to store files. I.e. DataDir=~/Data ");
+                }
+                documentStore = new EmbeddableDocumentStore()
+                                    {
+                                        DataDirectory = config.EmbeddedDataDirectory(),
+                                    };
+                documentStore.Initialize();
+                return documentStore;
+            }
+
+
+            if (config.IsInMemory())
+            {
+                documentStore = new EmbeddableDocumentStore() 
+                {
+                    RunInMemory = true,
+                };
+                documentStore.Initialize();
+                return documentStore;
+            }
+
+            throw new ConfigurationErrorsException("RavenDB connection is not configured. To get running quickly, to your provider configuration in web.config add \"inmemory=true\" for in-memory storage.");
         }
 
     }

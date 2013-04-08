@@ -21,8 +21,8 @@ namespace RavenDBMembership.Tests.TestHelpers
                             {"passwordStrengthRegularExpression", ""},
                             {"enablePasswordReset", "true"},
                             {"requiresQuestionAndAnswer", "true"},
-                            {"connectionStringName", "Server"},
-                            {"enableEmbeddableDocumentStore", "true"},
+                            //{"connectionStringName", "Server"},
+                            //{"enableEmbeddableDocumentStore", "true"},
                          };
         }
 
@@ -70,6 +70,31 @@ namespace RavenDBMembership.Tests.TestHelpers
         public ConfigBuilder WithPasswordRegex(string regex)
         {
             config.Replace("passwordStrengthRegularExpression", regex);
+            return this;
+        }
+
+        public ConfigBuilder WithConnectionStringName(string connectionStringName)
+        {
+            config.Replace("connectionStringName", connectionStringName);
+            return this;
+        }
+
+        public ConfigBuilder WithConnectionUrl(string connectionStringUrl)
+        {
+            config.Replace("connectionUrl", connectionStringUrl);
+            return this;
+        }
+
+        public ConfigBuilder WithEmbeddedStorage(string dataDir)
+        {
+            config.Replace("embedded", true.ToString());
+            config.Replace("dataDirectory", @"~/Data");
+            return this;
+        }
+
+        public ConfigBuilder InMemoryStorageMode()
+        {
+            config.Replace("inmemory", true.ToString());
             return this;
         }
     }

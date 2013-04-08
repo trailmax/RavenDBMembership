@@ -106,21 +106,23 @@ namespace RavenDBMembership.Provider
 
             this.providerName = string.IsNullOrEmpty(providedProviderName) ? "RavenDBMembership" : providedProviderName;
 
-            //if (string.IsNullOrEmpty(config["description"]))
-            //{
-            //    config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
-            //}
+            if (string.IsNullOrEmpty(config["description"]))
+            {
+                config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
+            }
 
             base.Initialize(this.providerName, config);
 
-            ApplicationName = GetConfigValue(config["applicationName"], System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath);
-            maxInvalidPasswordAttempts = Convert.ToInt32(GetConfigValue(config["maxInvalidPasswordAttempts"], "5"));
-            passwordAttemptWindow = Convert.ToInt32(GetConfigValue(config["passwordAttemptWindow"], "10"));
-            minRequiredNonAlphanumericCharacters = Convert.ToInt32(GetConfigValue(config["minRequiredNonAlphaNumericCharacters"], "1"));
-            minRequiredPasswordLength = Convert.ToInt32(GetConfigValue(config["minRequiredPasswordLength"], "7"));
-            passwordStrengthRegularExpression = Convert.ToString(GetConfigValue(config["passwordStrengthRegularExpression"], String.Empty));
-            enablePasswordReset = Convert.ToBoolean(GetConfigValue(config["enablePasswordReset"], "true"));
-            requiresQuestionAndAnswer = Convert.ToBoolean(GetConfigValue(config["requiresQuestionAndAnswer"], "false"));
+            var configuration = new Configuration(config);
+
+            ApplicationName = configuration.ApplicationName();
+            maxInvalidPasswordAttempts = configuration.MaxInvalidPasswordAttempts();
+            passwordAttemptWindow = configuration.PasswordAttemptWindow();
+            minRequiredNonAlphanumericCharacters = configuration.MinRequiredNonAlphanumericCharacters();
+            minRequiredPasswordLength = configuration.MinRequiredPasswordLength();
+            passwordStrengthRegularExpression = configuration.PasswordStrengthRegularExpression();
+            enablePasswordReset = configuration.EnablePasswordReset();
+            requiresQuestionAndAnswer = configuration.RequiresQuestionAndAnswer();
 
             if (documentStore == null)
             {

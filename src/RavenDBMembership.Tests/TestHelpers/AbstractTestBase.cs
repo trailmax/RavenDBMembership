@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Configuration.Provider;
 using System.Linq;
 using System.Reflection;
+using System.Web.Security;
 using NUnit.Framework;
 using Raven.Client;
 using Raven.Client.Document;
@@ -43,6 +44,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             Provider = new RavenDBMembershipProvider();
             RavenDBMembershipProvider.DocumentStore = null;
             RavenDBMembershipProvider.DocumentStore = InMemoryStore();
+           
             //RavenDBMembershipProvider.DocumentStore = LocalHostStore();
 
         }
