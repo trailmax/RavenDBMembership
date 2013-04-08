@@ -7,7 +7,7 @@ using RavenDBMembership.Tests.TestHelpers;
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
-	public class RoleTests : AbstractTestBase
+    public class RavenDBRoleProviderTests : AbstractTestBase
 	{
         private string _appName = "MyApplication";
         private Role[] _testRoles = new Role[] { new Role("Role 1", null), new Role("Role 2", null), new Role("Role 3", null) };

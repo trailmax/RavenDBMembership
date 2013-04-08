@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Configuration.Provider;
 using System.Linq;
 using System.Reflection;
-using System.Web.Security;
 using NUnit.Framework;
 using Raven.Client;
 using Raven.Client.Document;
@@ -42,8 +41,8 @@ namespace RavenDBMembership.Tests.TestHelpers
         public virtual void SetUp()
         {
             Provider = new RavenDBMembershipProvider();
-            RavenDBMembershipProvider.DocumentStore = null;
-            RavenDBMembershipProvider.DocumentStore = InMemoryStore();
+            Provider.DocumentStore = null;
+            Provider.DocumentStore = InMemoryStore();
            
             //RavenDBMembershipProvider.DocumentStore = LocalHostStore();
 
@@ -56,7 +55,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         {
             try
             {
-                RavenDBMembershipProvider.DocumentStore.Dispose();
+                Provider.DocumentStore.Dispose();
             }
             catch
             {
@@ -64,7 +63,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             }
         }
 
-        protected User GetUserFromDocumentStore(IDocumentStore store, string username)
+        public static User GetUserFromDocumentStore(IDocumentStore store, string username)
         {
             using (var session = store.OpenSession())
             {
@@ -72,7 +71,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             }
         }
 
-        protected void AddUserToDocumentStore(IDocumentStore store, User user)
+        public static void AddUserToDocumentStore(IDocumentStore store, User user)
         {
             using (var session = store.OpenSession())
             {
@@ -81,7 +80,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             }
         }
 
-        protected void CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
+        public static void CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
         {
             var users = CreateDummyUsers(numberOfUsers);
             using (var session = store.OpenSession())
@@ -94,7 +93,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             }
         }
 
-        protected List<User> CreateDummyUsers(int numberOfUsers)
+        protected static List<User> CreateDummyUsers(int numberOfUsers)
         {
             var users = new List<User>(numberOfUsers);
             for (int i = 0; i < numberOfUsers; i++)
@@ -104,7 +103,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             return users;
         }
 
-        public void InjectProvider(ProviderCollection collection, ProviderBase provider)
+        public static void InjectProvider(ProviderCollection collection, ProviderBase provider)
         {
             var fieldInfo = typeof (ProviderCollection).GetField("_ReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
             if (fieldInfo == null)

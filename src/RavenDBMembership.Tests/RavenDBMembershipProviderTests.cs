@@ -13,7 +13,7 @@ using RavenDBMembership.Tests.TestHelpers;
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
-    public class UserTests : AbstractTestBase
+    public class RavenDBMembershipProviderTests //: AbstractTestBase
     {
         private const string Password = "Password123_)*((";
         private const string UserEmail = "blah@blah.com";
@@ -23,17 +23,21 @@ namespace RavenDBMembership.Tests
         private const string ProviderUserKey = "providerUserKey";
         private const string ProviderName = "RavenDBMembership";
 
+        private RavenDBMembershipProvider sut;
+
         [SetUp]
-        public override void SetUp()
+        public void SetUp()
         {
-            // set up RavenDb Session and give it to the provider
-            base.SetUp();
+            sut = new RavenDBMembershipProvider();
         }
 
         [TearDown]
-        public override void TearDown()
+        public void TearDown()
         {
-            base.TearDown();
+            if (sut.DocumentStore != null)
+            {
+                sut.DocumentStore.Dispose();
+            }
         }
 
 
@@ -42,34 +46,35 @@ namespace RavenDBMembership.Tests
         public void CreateUser_WithDuplicateEmail_ReturnsDuplicateEmailStatus()
         {
             //Arrange
-            var existingUser = new UserBuilder().Build();
-            AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
-            MembershipCreateStatus status;
-            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
-            InjectProvider(Membership.Providers, Provider);
+            var existingUser = new UserBuilder().Build();
+
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
 
             //Act
-            var newUser = Provider.CreateUser(Username, Password, existingUser.Email, PasswordQuestion, PasswordAnswer, true, null, out status);
+            MembershipCreateStatus status;
+            var newUser = sut.CreateUser(Username, Password, existingUser.Email, PasswordQuestion, PasswordAnswer, true, null, out status);
 
             //Assert
             Assert.IsNull(newUser);
             Assert.AreEqual(MembershipCreateStatus.DuplicateEmail, status);
         }
 
-
+        /*
         [Test]
         public void CreateUser_WithDuplicateUsername_ReturnsDuplicateUsernameStatus()
         {
             //Arrange
             var existingUser = new UserBuilder().Build();
-            AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
             MembershipCreateStatus status;
-            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
 
             //Act
-            var newUser = Provider.CreateUser(existingUser.Username, Password, UserEmail, PasswordQuestion, PasswordAnswer, true, null, out status);
+            var newUser = sut.CreateUser(existingUser.Username, Password, UserEmail, PasswordQuestion, PasswordAnswer, true, null, out status);
 
             //Assert
             Assert.IsNull(newUser);
@@ -89,13 +94,13 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true).Build();
-            Provider.Initialize(ProviderName, config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
 
             MembershipCreateStatus status;
             Assert.Throws<ProviderException>(
-                () => Provider.CreateUser(Username, Password, UserEmail, null, null, true, ProviderUserKey, out status));
+                () => sut.CreateUser(Username, Password, UserEmail, null, null, true, ProviderUserKey, out status));
         }
 
 
@@ -106,13 +111,13 @@ namespace RavenDBMembership.Tests
             // Arrange
             var config = new ConfigBuilder()
                 .WithMinimumPasswordLength(10).Build();
-            Provider.Initialize(ProviderName, config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
 
             // Act
             MembershipCreateStatus status;
-            var user = Provider.CreateUser(Username, "shor_)t", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
+            var user = sut.CreateUser(Username, "shor_)t", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
 
             // Assert
             Assert.IsNull(user);
@@ -126,12 +131,12 @@ namespace RavenDBMembership.Tests
             // Arrange
             var config = new ConfigBuilder()
                 .WithMinNonAlfanumericCharacters(2).Build();
-            Provider.Initialize(ProviderName, config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             // Act
             MembershipCreateStatus status;
-            var user = Provider.CreateUser(Username, "NoSpecialCharactersPassword", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
+            var user = sut.CreateUser(Username, "NoSpecialCharactersPassword", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
 
             // Assert
             Assert.IsNull(user);
@@ -145,12 +150,12 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
-            Provider.Initialize(ProviderName, config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             // Act
             MembershipCreateStatus status;
-            var user = Provider.CreateUser(Username, "NoDigitsPassword", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
+            var user = sut.CreateUser(Username, "NoDigitsPassword", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
 
             // Assert
             Assert.IsNull(user);
@@ -165,12 +170,12 @@ namespace RavenDBMembership.Tests
         [Test]
         public void CreateUser_CorrectInput_ShouldCreateUserRecord()
         {
-            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             // act
             MembershipCreateStatus status;
-            var membershipUser = Provider.CreateUser("ValidateableUsername", "Anon", "anon@anon.com", null, null, true, null, out status);
+            var membershipUser = sut.CreateUser("ValidateableUsername", "Anon", "anon@anon.com", null, null, true, null, out status);
 
             // Assert
             Assert.AreEqual(MembershipCreateStatus.Success, status);
@@ -185,15 +190,15 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
-            Provider.Initialize(user.ApplicationName, new ConfigBuilder().Build());
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(user.ApplicationName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
 
-            var session = RavenDBMembershipProvider.DocumentStore.OpenSession();
+            var session = sut.DocumentStore.OpenSession();
             MembershipCreateStatus status;
 
             //Act
-            var membershipUser = Provider.CreateUser(user.Username, user.PasswordHash,
+            var membershipUser = sut.CreateUser(user.Username, user.PasswordHash,
                 user.Email, user.PasswordQuestion, user.PasswordAnswer,
                 user.IsApproved, null, out status);
             User createdUser = session.Load<User>(membershipUser.ProviderUserKey.ToString());
@@ -212,9 +217,9 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithoutValue("enableEmbeddableDocumentStore").Build();
 
-            RavenDBMembershipProvider.DocumentStore = null;
+            sut.DocumentStore = null;
 
-            Assert.Throws<ProviderException>(() => Provider.Initialize("RavenDBMembership", config));
+            Assert.Throws<ProviderException>(() => sut.Initialize("RavenDBMembership", config));
         }
 
         [Test]
@@ -224,14 +229,14 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithValue("enableEmbeddableDocumentStore", "true").Build();
 
-            RavenDBMembershipProvider.DocumentStore = null;
+            sut.DocumentStore = null;
 
 
             //Act
-            Provider.Initialize("TestApp", config);
+            sut.Initialize("TestApp", config);
 
             //Asset 
-            Assert.IsTrue(RavenDBMembershipProvider.DocumentStore.GetType() == typeof(EmbeddableDocumentStore));
+            Assert.IsTrue(sut.DocumentStore.GetType() == typeof(EmbeddableDocumentStore));
 
         }
 
@@ -242,12 +247,12 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithValue("enableEmbeddableDocumentStore","false").Build();
 
-            RavenDBMembershipProvider.DocumentStore = null;
+            sut.DocumentStore = null;
             //Act
-            Provider.Initialize("TestApp", config);
+            sut.Initialize("TestApp", config);
 
             //Asset 
-            Assert.IsTrue(RavenDBMembershipProvider.DocumentStore.GetType() == typeof(DocumentStore));
+            Assert.IsTrue(sut.GetType() == typeof(DocumentStore));
         }
 
 
@@ -256,8 +261,8 @@ namespace RavenDBMembership.Tests
         public void ValidateUserTest_should_return_false_if_username_is_null_or_empty()
         {
             //Act and Assert
-            Assert.IsFalse(Provider.ValidateUser("", ""));
-            Assert.IsFalse(Provider.ValidateUser(null, null));
+            Assert.IsFalse(sut.ValidateUser("", ""));
+            Assert.IsFalse(sut.ValidateUser(null, null));
         }
 
         [Test]
@@ -267,11 +272,11 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithValue("enablePasswordReset", "false").Build();
 
-            Provider.Initialize(config["applicationName"], config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(config["applicationName"], config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             //Act and Assert
-            Assert.Throws<NotSupportedException>(() => Provider.ResetPassword(null, null));
+            Assert.Throws<NotSupportedException>(() => sut.ResetPassword(null, null));
         }
 
 
@@ -280,23 +285,23 @@ namespace RavenDBMembership.Tests
         public void ChangePassword()
         {
             var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
-            AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
-            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
-            InjectProvider(Membership.Providers, Provider);
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
             
             // Arrange
             MembershipCreateStatus status;
-            var membershipUser = Provider.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
+            var membershipUser = sut.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
             Assert.AreEqual(MembershipCreateStatus.Success, status);
             Assert.NotNull(membershipUser);
 
             // Act
-            Provider.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");
+            sut.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");
             var o = -1;
-            var user = Provider.FindUsersByName("dummyUser", 0, 0, out o);
+            var user = sut.FindUsersByName("dummyUser", 0, 0, out o);
 
             // Assert
-            Assert.True(Provider.ValidateUser("dummyUser", "DCBA4321"));
+            Assert.True(sut.ValidateUser("dummyUser", "DCBA4321"));
         }
 
         [Test]
@@ -308,17 +313,17 @@ namespace RavenDBMembership.Tests
             string newQuestion = "MY NAME", newAnswer = "John";
 
 
-            Provider.Initialize(fakeUser.ApplicationName, new ConfigBuilder().Build());
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(fakeUser.ApplicationName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
-            var membershipUser = Provider.CreateUser(fakeUser.Username, fakeUser.PasswordHash, fakeUser.Email, fakeUser.PasswordQuestion,
+            var membershipUser = sut.CreateUser(fakeUser.Username, fakeUser.PasswordHash, fakeUser.Email, fakeUser.PasswordQuestion,
                 fakeUser.PasswordAnswer, fakeUser.IsApproved, null, out status);
 
             // Act
-            Provider.ChangePasswordQuestionAndAnswer("John", "1234ABCD", newQuestion, newAnswer);
+            sut.ChangePasswordQuestionAndAnswer("John", "1234ABCD", newQuestion, newAnswer);
 
 
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 var user = session.Load<User>(membershipUser.ProviderUserKey.ToString());
                 Assert.AreEqual(newQuestion, user.PasswordQuestion);
@@ -329,18 +334,18 @@ namespace RavenDBMembership.Tests
         public void DeleteUser()
         {
             // Arrange
-            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             MembershipCreateStatus status;
-            var membershipUser = Provider.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
+            var membershipUser = sut.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
 
             // Act
-            Provider.DeleteUser("dummyUser", true);
+            sut.DeleteUser("dummyUser", true);
 
             // Assert
             Thread.Sleep(500);
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 Assert.AreEqual(0, session.Query<User>().Count());
             }
@@ -350,7 +355,7 @@ namespace RavenDBMembership.Tests
         //[Test]
         //public void GetNumberOfUsersOnlineTest_should_return_4_user()
         //{
-        //    using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+        //    using (var session = sut.OpenSession())
         //    {
         //        // Arrange                    
         //        for (int i = 0; i < 5; i++)
@@ -378,11 +383,11 @@ namespace RavenDBMembership.Tests
         public void GetAllUsersShouldReturnAllUsers()
         {
             // Arrange
-            CreateUsersInDocumentStore(RavenDBMembershipProvider.DocumentStore, 5);
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
 
             // Act
             int totalRecords;
-            var membershipUsers = Provider.GetAllUsers(0, 10, out totalRecords);
+            var membershipUsers = sut.GetAllUsers(0, 10, out totalRecords);
 
             // Assert
             Assert.AreEqual(5, totalRecords);
@@ -393,11 +398,11 @@ namespace RavenDBMembership.Tests
         public void FindUsersByUsernamePart()
         {
             // Arrange
-            CreateUsersInDocumentStore(RavenDBMembershipProvider.DocumentStore, 5);
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
 
             // Act 
             int totalRecords;
-            var membershipUsers = Provider.FindUsersByName("ser", 0, 10, out totalRecords); // Usernames are User1 .. Usern
+            var membershipUsers = sut.FindUsersByName("ser", 0, 10, out totalRecords); // Usernames are User1 .. Usern
 
             // Assert
             Assert.AreEqual(5, totalRecords); // All users should be returned
@@ -408,11 +413,11 @@ namespace RavenDBMembership.Tests
         public void FindUsersWithPaging()
         {
             // Arrange
-            CreateUsersInDocumentStore(RavenDBMembershipProvider.DocumentStore, 10);
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
 
             // Act 
             int totalRecords;
-            var membershipUsers = Provider.GetAllUsers(0, 5, out totalRecords);
+            var membershipUsers = sut.GetAllUsers(0, 5, out totalRecords);
 
             // Assert
             Assert.AreEqual(10, totalRecords); // All users should be returned
@@ -424,13 +429,13 @@ namespace RavenDBMembership.Tests
         public void FindUsersForDomain()
         {
             // Arrange
-            CreateUsersInDocumentStore(RavenDBMembershipProvider.DocumentStore, 10);
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
 
             // Act
             int totalRecords;
-            var membershipUsers = Provider.FindUsersByEmail("@foo.bar", 0, 2, out totalRecords);
+            var membershipUsers = sut.FindUsersByEmail("@foo.bar", 0, 2, out totalRecords);
             int totalRecordsForUnknownDomain;
-            var membershipUsersForUnknownDomain = Provider.FindUsersByEmail("@foo.baz", 0, 2, out totalRecordsForUnknownDomain);
+            var membershipUsersForUnknownDomain = sut.FindUsersByEmail("@foo.baz", 0, 2, out totalRecordsForUnknownDomain);
 
             // Assert
             Assert.AreEqual(10, totalRecords); // All users should be returned
@@ -448,16 +453,16 @@ namespace RavenDBMembership.Tests
             // Arrange                                                
             var config = new ConfigBuilder().Build();
 
-            Provider.Initialize("applicationName", config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize("applicationName", config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
             MembershipCreateStatus status;
-            Provider.CreateUser(user.Username, user.PasswordHash, user.Email, user.PasswordQuestion, user.PasswordAnswer,
+            sut.CreateUser(user.Username, user.PasswordHash, user.Email, user.PasswordQuestion, user.PasswordAnswer,
                 user.IsApproved, null, out status);
 
 
-            Assert.Throws<NotSupportedException>(() => Provider.GetPassword(user.Username, "WrongPasswordAnswerAnswer"));
+            Assert.Throws<NotSupportedException>(() => sut.GetPassword(user.Username, "WrongPasswordAnswerAnswer"));
 
         }
 
@@ -466,11 +471,11 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             var config = new ConfigBuilder().Build();
-            Provider.Initialize("applicationName", config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize("applicationName", config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             User John = null;
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 John = new UserBuilder().WithPassword("1234ABCD").Build();
                 John.IsLockedOut = true;
@@ -480,8 +485,8 @@ namespace RavenDBMembership.Tests
             }
 
             //Act
-            bool results = Provider.UnlockUser(John.Username);
-            var updatedUser = GetUserFromDocumentStore(RavenDBMembershipProvider.DocumentStore, John.Username);
+            bool results = sut.UnlockUser(John.Username);
+            var updatedUser = AbstractTestBase.GetUserFromDocumentStore(sut.DocumentStore, John.Username);
 
             //Assert 
             Assert.IsTrue(results);
@@ -494,11 +499,11 @@ namespace RavenDBMembership.Tests
             //Arrange
             var config = new ConfigBuilder().Build();
 
-            Provider.Initialize("applicationName", config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize("applicationName", config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             //Act
-            bool results = Provider.UnlockUser("NOUSER");
+            bool results = sut.UnlockUser("NOUSER");
 
             //Assert 
             Assert.IsFalse(results);
@@ -513,21 +518,21 @@ namespace RavenDBMembership.Tests
 
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
 
-            Provider.Initialize("applicationName", config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize("applicationName", config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
 
             //Act
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 session.Store(user);
                 session.SaveChanges();
             }
             for (int i = 0; i < 10; i++)
             {
-                Provider.ValidateUser("John", "wrongpassword");
+                sut.ValidateUser("John", "wrongpassword");
             }
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 user = session.Query<User>().Where(x => x.Username == user.Username && x.ApplicationName == user.ApplicationName).SingleOrDefault();
             }
@@ -544,20 +549,20 @@ namespace RavenDBMembership.Tests
 
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
 
-            Provider.Initialize("applicationName", config);
-            InjectProvider(Membership.Providers, Provider);
+            sut.Initialize("applicationName", config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             //Act
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 session.Store(user);
                 session.SaveChanges();
             }
             for (int i = 0; i < 10; i++)
             {
-                Provider.ValidateUser("John", "wrongpassword");
+                sut.ValidateUser("John", "wrongpassword");
             }
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = sut.DocumentStore.OpenSession())
             {
                 user = session.Query<User>().Where(x => x.Username == user.Username && x.ApplicationName == user.ApplicationName).SingleOrDefault();
             }
@@ -588,6 +593,6 @@ namespace RavenDBMembership.Tests
                            };
             Assert.IsTrue(user.IsOnline);
         }
-
+        */
     }
 }

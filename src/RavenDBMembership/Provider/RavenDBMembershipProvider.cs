@@ -16,7 +16,6 @@ namespace RavenDBMembership.Provider
         #region Private Members
 
         private string providerName = "RavenDBMembership";
-        private static IDocumentStore documentStore;
         private int maxInvalidPasswordAttempts;
         private int passwordAttemptWindow;
         private int minRequiredNonAlphanumericCharacters;
@@ -83,51 +82,42 @@ namespace RavenDBMembership.Provider
 
         #endregion
 
-        public static IDocumentStore DocumentStore
-        {
-            get
-            {
-                //if (_documentStore == null)
-                //{
-                //    throw new NullReferenceException("The DocumentStore is not set. Please set the DocumentStore or make sure that the Common Service Locator can find the IDocumentStore and call Initialize on this provider.");
-                //}
-                return documentStore;
-            }
-            set { documentStore = value; }
-        }
+        public IDocumentStore DocumentStore { get; set; }
 
 
-        public override void Initialize(string providedProviderName, NameValueCollection config)
+        public override void Initialize(string providedProviderName, NameValueCollection configCollection)
         {
-            if (config == null)
+            if (configCollection == null)
             {
-                throw new ArgumentNullException("config");
+                throw new ArgumentNullException("configCollection");
             }
 
             this.providerName = string.IsNullOrEmpty(providedProviderName) ? "RavenDBMembership" : providedProviderName;
 
-            if (string.IsNullOrEmpty(config["description"]))
+            var config = new Configuration(configCollection);
+
+            if (string.IsNullOrEmpty(config.Description()))
             {
-                config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
+                configCollection["description"] = "An Asp.Net membership provider for the RavenDB document database.";
             }
 
-            base.Initialize(this.providerName, config);
 
-            var configuration = new Configuration(config);
 
-            ApplicationName = configuration.ApplicationName();
-            maxInvalidPasswordAttempts = configuration.MaxInvalidPasswordAttempts();
-            passwordAttemptWindow = configuration.PasswordAttemptWindow();
-            minRequiredNonAlphanumericCharacters = configuration.MinRequiredNonAlphanumericCharacters();
-            minRequiredPasswordLength = configuration.MinRequiredPasswordLength();
-            passwordStrengthRegularExpression = configuration.PasswordStrengthRegularExpression();
-            enablePasswordReset = configuration.EnablePasswordReset();
-            requiresQuestionAndAnswer = configuration.RequiresQuestionAndAnswer();
+            ApplicationName = config.ApplicationName();
+            maxInvalidPasswordAttempts = config.MaxInvalidPasswordAttempts();
+            passwordAttemptWindow = config.PasswordAttemptWindow();
+            minRequiredNonAlphanumericCharacters = config.MinRequiredNonAlphanumericCharacters();
+            minRequiredPasswordLength = config.MinRequiredPasswordLength();
+            passwordStrengthRegularExpression = config.PasswordStrengthRegularExpression();
+            enablePasswordReset = config.EnablePasswordReset();
+            requiresQuestionAndAnswer = config.RequiresQuestionAndAnswer();
 
-            if (documentStore == null)
+            if (DocumentStore == null)
             {
-                documentStore = RavenInitialiser.InitialiseDocumentStore(config);
+                DocumentStore = RavenInitialiser.InitialiseDocumentStore(configCollection);
             }
+
+            base.Initialize(this.providerName, configCollection);
         }
 
 
@@ -166,13 +156,13 @@ namespace RavenDBMembership.Provider
 
 
             var user = new User();
-            user.Username = username;
+            user.Username = username.ToLower();
             user.PasswordSalt = PasswordUtil.CreateRandomSalt();
             user.PasswordHash = EncodePassword(password, user.PasswordSalt);
-            user.Email = email;
-            user.ApplicationName = ApplicationName;
+            user.Email = email.ToLower();
+            user.ApplicationName = ApplicationName.ToLower();
             user.CreationDate = DateTime.Now;
-            user.PasswordQuestion = passwordQuestion;
+            user.PasswordQuestion = passwordQuestion.ToLower();
             user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : EncodePassword(passwordAnswer, user.PasswordSalt);
             user.IsApproved = isApproved;
             user.IsLockedOut = false;
@@ -181,7 +171,8 @@ namespace RavenDBMembership.Provider
             using (var session = DocumentStore.OpenSession())
             {
                 var existingUser = session.Query<User>()
-                    .FirstOrDefault(u => (u.Email == email || u.Username == username) && u.ApplicationName == ApplicationName);
+                    .FirstOrDefault(u => (u.Email == email || u.Username == username) 
+                        && u.ApplicationName == ApplicationName);
 
                 if (existingUser != null)
                 {
@@ -340,7 +331,7 @@ namespace RavenDBMembership.Provider
 
         public override MembershipUser GetUser(string username, bool updateLastSeenTimestamp)
         {
-            using (var session = documentStore.OpenSession())
+            using (var session = DocumentStore.OpenSession())
             {
                 var user = session.Query<User>()
                            .SingleOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
@@ -364,7 +355,7 @@ namespace RavenDBMembership.Provider
 
         public override MembershipUser GetUser(object providerUserKey, bool updateLastSeenTimestamp)
         {
-            using (var session = documentStore.OpenSession())
+            using (var session = DocumentStore.OpenSession())
             {
                 var user = session.Load<User>(providerUserKey.ToString());
                 if (user == null)

@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Configuration.Provider;
 using System.Web.Security;
 using NUnit.Framework;
 using RavenDBMembership.Tests.TestHelpers;
 
 namespace RavenDBMembership.Tests
 {
+    //TODO rename test methods
     [TestFixture]
     class ProviderConfigurationTests : AbstractTestBase
     {

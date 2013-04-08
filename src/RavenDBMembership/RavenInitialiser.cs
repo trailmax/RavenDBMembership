@@ -30,67 +30,92 @@ namespace RavenDBMembership
             var connectionStringName = config.ConnectionStringName();
             if (!String.IsNullOrEmpty(connectionStringName))
             {
-                var connectionString = ConfigurationManager.ConnectionStrings[connectionStringName].ConnectionString;
-                if (connectionString.ToLower().Contains("datadir"))
-                {
-                    documentStore = new EmbeddableDocumentStore()
-                                        {
-                                            ConnectionStringName = connectionStringName,
-                                        };
-                }
-                else
-                {
-                    documentStore = new DocumentStore()
-                                        {
-                                            ConnectionStringName = connectionStringName
-                                        };
-                }
-
-                documentStore.Initialize();
-                return documentStore;
+                return DocumentStoreFromConnectionString(connectionStringName);
             }
 
             // Connection URL provided
             var connectionUrl = config.ConnectionUrl();
             if (!String.IsNullOrEmpty(connectionUrl))
             {
-                documentStore = new DocumentStore()
-                                        {
-                                            Url = connectionUrl,
-                                        };
-                documentStore.Initialize();
-                return documentStore;
+                return DocumentStoreFromUrl(connectionUrl);
             }
 
 
             // Embedded storage
             if (config.IsEmbedded())
             {
-                if (String.IsNullOrEmpty(config.EmbeddedDataDirectory()))
-                {
-                    throw new ConfigurationErrorsException("For Embedded Mode please provide DataDir parameter with address where to store files. I.e. DataDir=~/Data ");
-                }
-                documentStore = new EmbeddableDocumentStore()
-                                    {
-                                        DataDirectory = config.EmbeddedDataDirectory(),
-                                    };
-                documentStore.Initialize();
-                return documentStore;
+                return DocumentStoreEmbedded(config);
             }
 
 
             if (config.IsInMemory())
             {
-                documentStore = new EmbeddableDocumentStore() 
-                {
-                    RunInMemory = true,
-                };
-                documentStore.Initialize();
-                return documentStore;
+                return DocumentStoreInMemory();
             }
 
             throw new ConfigurationErrorsException("RavenDB connection is not configured. To get running quickly, to your provider configuration in web.config add \"inmemory=true\" for in-memory storage.");
         }
 
+
+        private static IDocumentStore DocumentStoreInMemory()
+        {
+            var documentStore = new EmbeddableDocumentStore()
+                                {
+                                    RunInMemory = true,
+                                };
+            documentStore.Initialize();
+            return documentStore;
+        }
+
+
+        private static IDocumentStore DocumentStoreEmbedded(Configuration config)
+        {
+            if (String.IsNullOrEmpty(config.EmbeddedDataDirectory()))
+            {
+                throw new ConfigurationErrorsException(
+                    "For Embedded Mode please provide DataDir parameter with address where to store files. I.e. DataDir=~/Data ");
+            }
+            var documentStore = new EmbeddableDocumentStore()
+                                {
+                                    DataDirectory = config.EmbeddedDataDirectory(),
+                                };
+            documentStore.Initialize();
+            return documentStore;
+        }
+
+
+        private static IDocumentStore DocumentStoreFromUrl(string connectionUrl)
+        {
+            var documentStore = new DocumentStore()
+                                {
+                                    Url = connectionUrl,
+                                };
+            documentStore.Initialize();
+            return documentStore;
+        }
+
+
+        private static IDocumentStore DocumentStoreFromConnectionString(string connectionStringName)
+        {
+            IDocumentStore documentStore;
+            var connectionString = ConfigurationManager.ConnectionStrings[connectionStringName].ConnectionString;
+            if (connectionString.ToLower().Contains("datadir"))
+            {
+                documentStore = new EmbeddableDocumentStore()
+                                    {
+                                        ConnectionStringName = connectionStringName,
+                                    };
+            }
+            else
+            {
+                documentStore = new DocumentStore()
+                                    {
+                                        ConnectionStringName = connectionStringName
+                                    };
+            }
+
+            documentStore.Initialize();
+            return documentStore;
+        }
     }
 }

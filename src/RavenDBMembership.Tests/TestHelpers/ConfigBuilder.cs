@@ -21,8 +21,7 @@ namespace RavenDBMembership.Tests.TestHelpers
                             {"passwordStrengthRegularExpression", ""},
                             {"enablePasswordReset", "true"},
                             {"requiresQuestionAndAnswer", "true"},
-                            //{"connectionStringName", "Server"},
-                            //{"enableEmbeddableDocumentStore", "true"},
+                            {"inMemory", "true"},
                          };
         }
 

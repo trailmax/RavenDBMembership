@@ -14,10 +14,10 @@ namespace RavenDBMembership
 
         public String Description()
         {
-            if (String.IsNullOrEmpty(config["description"]))
-            {
-                config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
-            }
+            //if (String.IsNullOrEmpty(config["description"]))
+            //{
+            //    config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
+            //}
             return config["description"];
         }
 

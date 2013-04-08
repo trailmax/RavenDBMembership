@@ -92,9 +92,8 @@ namespace RavenDBMembership.Tests
                 ApplicationName = "Hello RavenDB"
             };
 
-            RavenDBMembershipProvider.DocumentStore = _documentStore;
 
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = _documentStore.OpenSession())
             {
                 session.Store(originalUser);
                 session.SaveChanges();
@@ -104,7 +103,7 @@ namespace RavenDBMembership.Tests
 
 
             // Act
-            using (var session = RavenDBMembershipProvider.DocumentStore.OpenSession())
+            using (var session = _documentStore.OpenSession())
             {
                 var userLoaded = session.Load<User>(originalUser.Id);
                 Assert.NotNull(userLoaded); // works fine

@@ -24,7 +24,7 @@ namespace RavenDBMembership.Tests.TestHelpers
                 LastActivityDate = DateTime.Now,
                 IsApproved = true,
                 Comment = "A FAKE USER",
-                ApplicationName = "TestApp",
+                ApplicationName = "UnitTest",
                 CreationDate = DateTime.Now,
                 LastLoginDate = DateTime.Now,
                 FailedPasswordAttempts = 0,
