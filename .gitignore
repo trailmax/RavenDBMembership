@@ -91,3 +91,4 @@ build/
 *.aps
 *.sln.cache
 *.ncrunchsolution
+_NCrunch*
