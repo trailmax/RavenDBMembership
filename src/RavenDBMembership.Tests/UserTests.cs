@@ -1,5 +1,4 @@
-﻿using System.Collections.Specialized;
-using System.Configuration.Provider;
+﻿using System.Configuration.Provider;
 using NUnit.Framework;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
@@ -16,17 +15,41 @@ namespace RavenDBMembership.Tests
     [TestFixture]
     public class UserTests : AbstractTestBase
     {
+        private const string Password = "Password123_)*((";
+        private const string UserEmail = "blah@blah.com";
+        private const string Username = "username";
+        private const string PasswordQuestion = "question";
+        private const string PasswordAnswer = "passwordAnswer";
+        private const string ProviderUserKey = "providerUserKey";
+        private const string ProviderName = "RavenDBMembership";
+
+        [SetUp]
+        public override void SetUp()
+        {
+            // set up RavenDb Session and give it to the provider
+            base.SetUp();
+        }
+
+        [TearDown]
+        public override void TearDown()
+        {
+            base.TearDown();
+        }
+
+
+
         [Test]
         public void CreateUser_WithDuplicateEmail_ReturnsDuplicateEmailStatus()
         {
             //Arrange
             var existingUser = new UserBuilder().Build();
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
+
             MembershipCreateStatus status;
-            Provider.Initialize("RavenTest", new ConfigBuilder().Build());
+            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
 
             //Act
-            var newUser = Provider.CreateUser("SomeOtherUsername", "password", existingUser.Email, "question", "Answer", true, null, out status);
+            var newUser = Provider.CreateUser(Username, Password, existingUser.Email, PasswordQuestion, PasswordAnswer, true, null, out status);
 
             //Assert
             Assert.IsNull(newUser);
@@ -38,13 +61,13 @@ namespace RavenDBMembership.Tests
         public void CreateUser_WithDuplicateUsername_ReturnsDuplicateUsernameStatus()
         {
             //Arrange
-            var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
+            var existingUser = new UserBuilder().Build();
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
             MembershipCreateStatus status;
-            Provider.Initialize("RavenTest", new ConfigBuilder().Build());
+            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
 
             //Act
-            var newUser = Provider.CreateUser(existingUser.Username, "password", "some@email.com", "question", "Answer", true, null, out status);
+            var newUser = Provider.CreateUser(existingUser.Username, Password, UserEmail, PasswordQuestion, PasswordAnswer, true, null, out status);
 
             //Assert
             Assert.IsNull(newUser);
@@ -53,20 +76,92 @@ namespace RavenDBMembership.Tests
 
 
         //TODO create user tests:
-        // * if password reset is enabled and question/answer is required, throw exception if these are not provided
-        // * minimum password requirements
         // * actually create user with success
         // * check that created user has hashed password and it can be validated
 
+
+        // if password reset is enabled and question/answer is required, throw exception if these are not provided
+        [Test]
+        public void CreateUser_PasswordResetEnabledNoAnswer_ThrowsException()
+        {
+            var config = new ConfigBuilder()
+                .EnablePasswordReset(true)
+                .RequiresPasswordAndAnswer(true).Build();
+            Provider.Initialize(ProviderName, config);
+
+            MembershipCreateStatus status;
+            Assert.Throws<ProviderException>(
+                () => Provider.CreateUser(Username, Password, UserEmail, null, null, true, ProviderUserKey, out status));
+        }
+
+
+        // minimum password requirements
+        [Test]
+        public void CreateUser_ShortPassword_ReturnsNullAndInvalidPasswordStatus()
+        {
+            // Arrange
+            var config = new ConfigBuilder()
+                .WithMinimumPasswordLength(10).Build();
+            Provider.Initialize(ProviderName, config);
+
+            // Act
+            MembershipCreateStatus status;
+            var user = Provider.CreateUser(Username, "shor_)t", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
+
+            // Assert
+            Assert.IsNull(user);
+            Assert.AreEqual(MembershipCreateStatus.InvalidPassword, status);
+        }
+
+
+        [Test]
+        public void CreateUser_PasswordNoSpecialChars_ReturnsNullAndInvalidPasswordStatus()
+        {
+            // Arrange
+            var config = new ConfigBuilder()
+                .WithMinNonAlfanumericCharacters(2).Build();
+            Provider.Initialize(ProviderName, config);
+
+            // Act
+            MembershipCreateStatus status;
+            var user = Provider.CreateUser(Username, "NoSpecialCharactersPassword", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
+
+            // Assert
+            Assert.IsNull(user);
+            Assert.AreEqual(MembershipCreateStatus.InvalidPassword, status);
+        }
+
+
+        [Test]
+        public void CreateUser_PasswordRegexSimplePassword_ReturnsNullAndInvalidPasswordStatus()
+        {
+            var config = new ConfigBuilder()
+                .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
+                .Build();
+            Provider.Initialize(ProviderName, config);
+
+            // Act
+            MembershipCreateStatus status;
+            var user = Provider.CreateUser(Username, "NoDigitsPassword", UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
+
+            // Assert
+            Assert.IsNull(user);
+            Assert.AreEqual(MembershipCreateStatus.InvalidPassword, status);
+        }
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
         
         [Test]
         public void CreateUser_CorrectInput_ShouldCreateUserRecord()
         {
-            MembershipCreateStatus status;
+            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
+            InjectProvider(Membership.Providers, Provider);
 
             // act
+            MembershipCreateStatus status;
             var membershipUser = Provider.CreateUser("ValidateableUsername", "Anon", "anon@anon.com", null, null, true, null, out status);
 
             // Assert
@@ -83,6 +178,8 @@ namespace RavenDBMembership.Tests
             //Arrange
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
             Provider.Initialize(user.ApplicationName, new ConfigBuilder().Build());
+            InjectProvider(Membership.Providers, Provider);
+
 
             var session = RavenDBMembershipProvider.DocumentStore.OpenSession();
             MembershipCreateStatus status;
@@ -109,15 +206,7 @@ namespace RavenDBMembership.Tests
 
             RavenDBMembershipProvider.DocumentStore = null;
 
-            //Act
-            try
-            {
-                Provider.Initialize("TestApp", config);
-            }
-            catch (Exception exception)
-            {
-                Assert.IsInstanceOf(typeof(ProviderException), exception);
-            }
+            Assert.Throws<ProviderException>(() => Provider.Initialize("RavenDBMembership", config));
         }
 
         [Test]
@@ -171,6 +260,7 @@ namespace RavenDBMembership.Tests
                 .WithValue("enablePasswordReset", "false").Build();
 
             Provider.Initialize(config["applicationName"], config);
+            InjectProvider(Membership.Providers, Provider);
 
             //Act and Assert
             Assert.Throws<NotSupportedException>(() => Provider.ResetPassword(null, null));
@@ -183,8 +273,8 @@ namespace RavenDBMembership.Tests
         {
             var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
             AddUserToDocumentStore(RavenDBMembershipProvider.DocumentStore, existingUser);
-            Provider.Initialize("RavenTest", new ConfigBuilder().Build());
-
+            Provider.Initialize(ProviderName, new ConfigBuilder().Build());
+            InjectProvider(Membership.Providers, Provider);
             
             // Arrange
             MembershipCreateStatus status;
@@ -206,11 +296,12 @@ namespace RavenDBMembership.Tests
         {
             // Arrange                
             MembershipCreateStatus status;
-            User fakeUser = new UserBuilder().WithPassword("1234ABCD").Build();
+            var fakeUser = new UserBuilder().WithPassword("1234ABCD").Build();
             string newQuestion = "MY NAME", newAnswer = "John";
 
 
             Provider.Initialize(fakeUser.ApplicationName, new ConfigBuilder().Build());
+            InjectProvider(Membership.Providers, Provider);
 
             var membershipUser = Provider.CreateUser(fakeUser.Username, fakeUser.PasswordHash, fakeUser.Email, fakeUser.PasswordQuestion,
                 fakeUser.PasswordAnswer, fakeUser.IsApproved, null, out status);
@@ -350,6 +441,8 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder().Build();
 
             Provider.Initialize("applicationName", config);
+            InjectProvider(Membership.Providers, Provider);
+
             var user = new UserBuilder().WithPassword("1234ABCD").Build();
             MembershipCreateStatus status;
             Provider.CreateUser(user.Username, user.PasswordHash, user.Email, user.PasswordQuestion, user.PasswordAnswer,

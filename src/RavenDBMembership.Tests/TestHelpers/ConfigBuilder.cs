@@ -12,19 +12,17 @@ namespace RavenDBMembership.Tests.TestHelpers
         {
             config = new NameValueCollection()
                          {
-	                        {"applicationName", "TestApp"},
-	                        {"enablePasswordReset", "true"},
-	                        {"enablePasswordRetrieval", "false"},
-	                        {"maxInvalidPasswordAttempts", "5"},
-	                        {"minRequiredAlphaNumericCharacters", "2"},
-	                        {"minRequiredPasswordLength", "8"},
-	                        {"requiresQuestionAndAnswer", "true"},
-	                        {"requiresUniqueEmail", "true"},
-	                        {"passwordAttemptWindow", "10"},
-	                        {"passwordFormat", "Hashed"},
-	                        {"connectionStringName", "Server"},
-	                        {"enableEmbeddableDocumentStore", "true"}
-                             
+                            {"applicationName", "UnitTest"},
+
+                            {"maxInvalidPasswordAttempts", "5"},
+                            {"passwordAttemptWindow", "10"},
+                            {"minRequiredNonAlphaNumericCharacters", "1"},
+                            {"minRequiredPasswordLength", "7"},
+                            {"passwordStrengthRegularExpression", ""},
+                            {"enablePasswordReset", "true"},
+                            {"requiresQuestionAndAnswer", "true"},
+                            {"connectionStringName", "Server"},
+                            {"enableEmbeddableDocumentStore", "true"},
                          };
         }
 
@@ -44,13 +42,45 @@ namespace RavenDBMembership.Tests.TestHelpers
             config.Remove(key);
             return this;
         }
+
+        public ConfigBuilder EnablePasswordReset(bool value)
+        {
+            config.Replace("enablePasswordReset", value.ToString());
+            return this;
+        }
+
+        public ConfigBuilder RequiresPasswordAndAnswer(bool value)
+        {
+            config.Replace("requiresQuestionAndAnswer", value.ToString());
+            return this;
+        }
+
+        public ConfigBuilder WithMinimumPasswordLength(int minimumLength)
+        {
+            config.Replace("minRequiredPasswordLength", minimumLength.ToString());
+            return this;
+        }
+
+        public ConfigBuilder WithMinNonAlfanumericCharacters(int minimumNumber)
+        {
+            config.Replace("minRequiredNonAlphaNumericCharacters", minimumNumber.ToString());
+            return this;
+        }
+
+        public ConfigBuilder WithPasswordRegex(string regex)
+        {
+            config.Replace("passwordStrengthRegularExpression", regex);
+            return this;
+        }
     }
+
+    #region tests
 
     [TestFixture]
     public class ConfigBuilderTests
     {
         [Test]
-        public void ConfigBuilder_BuildsConfig()
+        public void Build_ReturnsInstanceOfConfig()
         {
             var sut = new ConfigBuilder().Build();
             Assert.IsNotNull(sut);
@@ -58,7 +88,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void ConfigBuilder_WithValue_gives_required_value()
+        public void WithValue_NonExistingValue_AddsThisValue()
         {
             var sut = new ConfigBuilder().WithValue("Hello", "World").Build();
 
@@ -66,14 +96,14 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void ConfigBuilder_WithoutValue_does_notHave_value()
+        public void WithoutValue_WithExistingValue_RemovesValue()
         {
             var sut = new ConfigBuilder().WithoutValue("applicationName").Build();
             Assert.IsNull(sut["applicationName"]);
         }
 
         [Test]
-        public void ConfigBuilder_returns_sameObject()
+        public void Build_CalledTwice_ReturnsSameInstance()
         {
             var sut = new ConfigBuilder();
             var result = sut.Build();
@@ -82,12 +112,14 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void Different_ConfigBuilders_returns_differentObjects()
+        public void Build_TwoInstances_ReturnTwoConfigInstances()
         {
             var result1 = new ConfigBuilder().Build();
             var result = new ConfigBuilder().Build();
 
             Assert.AreNotSame(result, result1);
         }
+
+    #endregion
     }
 }

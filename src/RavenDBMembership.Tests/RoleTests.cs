@@ -2,6 +2,7 @@
 using RavenDBMembership.Provider;
 using System.Linq;
 using System.Threading;
+using RavenDBMembership.Tests.TestHelpers;
 
 namespace RavenDBMembership.Tests
 {

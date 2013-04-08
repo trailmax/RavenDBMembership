@@ -1,13 +1,7 @@
-﻿// ReSharper disable InconsistentNaming
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
+﻿using System;
 using System.Configuration.Provider;
-using System.Linq;
-using System.Text;
 using System.Web.Security;
 using NUnit.Framework;
-using RavenDBMembership.Provider;
 using RavenDBMembership.Tests.TestHelpers;
 
 namespace RavenDBMembership.Tests
@@ -15,6 +9,8 @@ namespace RavenDBMembership.Tests
     [TestFixture]
     class ProviderConfigurationTests : AbstractTestBase
     {
+        private const string ProviderName = "RavenTest";
+
         [TestCase("true", Result = true)]
         [TestCase("false", Result = false)]
         public bool Password_reset_should_be_enabled_fromConfig(String value)
@@ -45,42 +41,19 @@ namespace RavenDBMembership.Tests
         [Test]
         public void EnablePasswordRetrievel_should_return_true_from_config()
         {
-            var config = new ConfigBuilder()
-                .WithValue("enablePasswordRetrieval", "false").Build();
-
-            Provider.Initialize("RavenTest", config);
-
             bool enabled = Provider.EnablePasswordRetrieval;
 
             Assert.IsFalse(enabled);
         }
 
 
-        [Test]
-        public void EnablePasswordRetrievel_should_throw_if_set_to_true()
-        {
-            var config = new ConfigBuilder()
-                .WithValue("enablePasswordRetrieval", "true").Build();
-
-            Assert.Throws<ProviderException>(() => Provider.Initialize("RavenTest", config));
-        }
-
-        [Test]
-        public void RequiresUniqueEmails_should_throw_if_false()
-        {
-            var config = new ConfigBuilder()
-                .WithValue("requiresUniqueEmail", "false").Build();
-
-            Assert.Throws<ProviderException>(() => Provider.Initialize("RavenTest", config));
-        }
 
         [Test]
         public void RequiresUniqueEmailTest_should_return_true_from_config()
         {
-            var config = new ConfigBuilder()
-                .WithValue("requiresUniqueEmail", "true").Build();
+            var config = new ConfigBuilder().Build();
 
-            Provider.Initialize("RavenTest", config);
+            Provider.Initialize(ProviderName, config);
 
             Assert.IsTrue(Provider.RequiresUniqueEmail);
         }
@@ -94,7 +67,7 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithValue("maxInvalidPasswordAttempts", value).Build();
 
-            Provider.Initialize("RavenTest", config);
+            Provider.Initialize(ProviderName, config);
 
             return Provider.MaxInvalidPasswordAttempts;
         }
@@ -108,8 +81,8 @@ namespace RavenDBMembership.Tests
         public int MinRequiredNonalphanumericCharactersTest_should_take_from_config(string value)
         {
             var config = new ConfigBuilder()
-                .WithValue("minRequiredAlphaNumericCharacters", value).Build();
-            Provider.Initialize("RavenTest", config);
+                .WithValue("minRequiredNonAlphaNumericCharacters", value).Build();
+            Provider.Initialize(ProviderName, config);
 
             return Provider.MinRequiredNonAlphanumericCharacters;
         }
@@ -121,7 +94,7 @@ namespace RavenDBMembership.Tests
         {
             var config = new ConfigBuilder()
                 .WithValue("minRequiredPasswordLength", value).Build();
-            Provider.Initialize("RavenTest", config);
+            Provider.Initialize(ProviderName, config);
 
             return Provider.MinRequiredPasswordLength;
         }
@@ -134,7 +107,7 @@ namespace RavenDBMembership.Tests
             var config = new ConfigBuilder()
                 .WithValue("requiresQuestionAndAnswer", value).Build();
 
-            Provider.Initialize("RavenTest", config);
+            Provider.Initialize(ProviderName, config);
 
             return Provider.RequiresQuestionAndAnswer;
         }
@@ -143,12 +116,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void PasswordFormatTest_should_return_encrypted_from_config()
         {
-            var config = new ConfigBuilder().Build();
-
-            Provider.Initialize("RavenTest", config);
-
             Assert.AreEqual(MembershipPasswordFormat.Hashed, Provider.PasswordFormat);
         }
     }
 }
-// ReSharper restore InconsistentNaming

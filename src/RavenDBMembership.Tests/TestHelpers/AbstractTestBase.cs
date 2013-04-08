@@ -1,30 +1,31 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+using System.Configuration.Provider;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
 using RavenDBMembership.Provider;
-using RavenDBMembership.Tests.TestHelpers;
 
-namespace RavenDBMembership.Tests
+namespace RavenDBMembership.Tests.TestHelpers
 {
-	public abstract class AbstractTestBase
-	{
-	    protected RavenDBMembershipProvider Provider;
+    public abstract class AbstractTestBase
+    {
+        protected RavenDBMembershipProvider Provider;
 
-		protected IDocumentStore InMemoryStore()
-		{
-			var documentStore = new EmbeddableDocumentStore
-			{
-				RunInMemory = true,
+        protected IDocumentStore InMemoryStore()
+        {
+            var documentStore = new EmbeddableDocumentStore
+            {
+                RunInMemory = true,
                 //UseEmbeddedHttpServer = true
-			};
-			documentStore.Initialize();
-			return documentStore;
-		}
+            };
+            documentStore.Initialize();
+            return documentStore;
+        }
 
         
         protected IDocumentStore LocalHostStore()
@@ -37,7 +38,7 @@ namespace RavenDBMembership.Tests
 
 
         [SetUp]
-        public void Setup()
+        public virtual void SetUp()
         {
             Provider = new RavenDBMembershipProvider();
             RavenDBMembershipProvider.DocumentStore = null;
@@ -49,7 +50,7 @@ namespace RavenDBMembership.Tests
 
 
         [TearDown]
-        public void TearDown()
+        public virtual void TearDown()
         {
             try
             {
@@ -61,7 +62,7 @@ namespace RavenDBMembership.Tests
             }
         }
 
-	    protected User GetUserFromDocumentStore(IDocumentStore store, string username)
+        protected User GetUserFromDocumentStore(IDocumentStore store, string username)
         {
             using (var session = store.OpenSession())
             {
@@ -69,7 +70,7 @@ namespace RavenDBMembership.Tests
             }
         }
 
-	    protected void AddUserToDocumentStore(IDocumentStore store, User user)
+        protected void AddUserToDocumentStore(IDocumentStore store, User user)
         {
             using (var session = store.OpenSession())
             {
@@ -78,7 +79,7 @@ namespace RavenDBMembership.Tests
             }
         }
 
-	    protected void CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
+        protected void CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
         {
             var users = CreateDummyUsers(numberOfUsers);
             using (var session = store.OpenSession())
@@ -91,7 +92,7 @@ namespace RavenDBMembership.Tests
             }
         }
 
-	    protected List<User> CreateDummyUsers(int numberOfUsers)
+        protected List<User> CreateDummyUsers(int numberOfUsers)
         {
             var users = new List<User>(numberOfUsers);
             for (int i = 0; i < numberOfUsers; i++)
@@ -101,5 +102,32 @@ namespace RavenDBMembership.Tests
             return users;
         }
 
-	}
+        public void InjectProvider(ProviderCollection collection, ProviderBase provider)
+        {
+            var fieldInfo = typeof (ProviderCollection).GetField("_ReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (fieldInfo == null)
+            {
+                throw new NullReferenceException("Can not hook into ProviderCollection");
+            }
+            fieldInfo.SetValue(collection, false);
+
+            var field = typeof (ProviderCollection).GetField("_Hashtable", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                throw new NullReferenceException("Can not get _Hashtable collection from ProviderCollection");
+            }
+
+            var hash = (Hashtable)field.GetValue(collection);
+
+            if (hash[provider.Name] == null)
+            {
+                hash.Add(provider.Name, provider);
+            }
+            else
+            {
+                hash[provider.Name] = provider;
+            }
+        }
+
+    }
 }

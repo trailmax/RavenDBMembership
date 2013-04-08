@@ -62,7 +62,7 @@ namespace RavenDBMembership.Tests.TestHelpers
     public class UserBuilderTests
     {
         [Test]
-        public void Builder_Returns_user()
+        public void Build_ReturnsUserInstance()
         {
             var sut = new UserBuilder();
             var result = sut.Build();
@@ -72,7 +72,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void Builder_Returns_correct_username()
+        public void Build_WithUsername_ReturnsCorrectUsername()
         {
             var sut = new UserBuilder().WithUsername("John");
             var result = sut.Build();
@@ -80,7 +80,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void Builder_returns_hash_username()
+        public void Build_WithPassword_ProvidesHashPassword()
         {
             var sut = new UserBuilder().WithPassword("Hello World");
             var result = sut.Build();
@@ -89,7 +89,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void Builder_returns_the_same_object()
+        public void Build_CalledTwice_ReturnsSameInstance()
         {
             var sut = new UserBuilder();
             var result = sut.Build();
@@ -98,13 +98,13 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
         [Test]
-        public void DifferentBuilders_return_different_objects()
+        public void Build_TwoInstances_ReturnDifferentInstancesOfUser()
         {
             Assert.AreNotSame(new UserBuilder().Build(), new UserBuilder().Build());
         }
 
         [Test]
-        public void Builder_returns_questionAnswer()
+        public void Build_WithQuestionAnswer_ProvidesHashOfAnswer()
         {
             const string question = "random";
             const string answer = "another random";
