@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web.Security;
 using Raven.Client;
 using System.Collections.Specialized;
@@ -139,9 +140,10 @@ namespace RavenDBMembership.Provider
             string passwordQuestion, string passwordAnswer, bool isApproved, object providerUserKey,
             out MembershipCreateStatus status)
         {
-            ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, password, true);
+            // raise external events
+            var args = new ValidatePasswordEventArgs(username, password, true);
             OnValidatingPassword(args);
-            if (args.Cancel)
+            if (args.Cancel || !PasswordIsValid(password)) // validate password internally
             {
                 status = MembershipCreateStatus.InvalidPassword;
                 return null;
@@ -188,8 +190,38 @@ namespace RavenDBMembership.Provider
             }
         }
 
-        // todo check if password has enough characters
-        // todo check if password is of good enough complexity
+
+        private bool PasswordIsValid(String password)
+        {
+            if (password.Length < MinRequiredPasswordLength)
+            {
+                return false;
+            }
+
+            int count = 0;
+
+            for (int i = 0; i < password.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(password, i))
+                {
+                    count++;
+                }
+            }
+
+            if (count < MinRequiredNonAlphanumericCharacters)
+            {
+                return false;
+            }
+
+            if (PasswordStrengthRegularExpression.Length > 0)
+            {
+                if (!Regex.IsMatch(password, PasswordStrengthRegularExpression))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         /// <summary>
         /// Changes password of a user with given username.
@@ -203,15 +235,14 @@ namespace RavenDBMembership.Provider
         {
             ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, false);
             OnValidatingPassword(args);
-            if (args.Cancel)
+            if (args.Cancel || !PasswordIsValid(newPassword))
             {
                 throw new MembershipPasswordException("The new password is not valid.");
             }
-            //Do not need to track invalid password attempts here because they will be picked up in ValidateUser
+
             if (!ValidateUser(username, oldPassword))
             {
-                throw new MembershipPasswordException(
-                    "Invalid username or old password. You must supply valid credentials to change your password.");
+                throw new MembershipPasswordException("Invalid username or old password. You must supply valid credentials to change your password.");
             }
 
             using (var session = DocumentStore.OpenSession())

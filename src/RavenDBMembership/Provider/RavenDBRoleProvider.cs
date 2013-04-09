@@ -1,16 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Web.Security;
 using System.Collections.Specialized;
 using Raven.Client;
-using System.IO;
-using System.Configuration;
-using System.Configuration.Provider;
-using Raven.Client.Document;
 using Raven.Client.Linq;
-using Raven.Client.Embedded;
 
 
 namespace RavenDBMembership.Provider
@@ -18,20 +11,20 @@ namespace RavenDBMembership.Provider
 	public class RavenDBRoleProvider : RoleProvider
 	{
 		private const string ProviderName = "RavenDBRole";
-		private static IDocumentStore _documentStore;
+		private static IDocumentStore documentStore;
 
         
 		public static IDocumentStore DocumentStore
 		{
 			get
 			{
-				if (_documentStore == null)
+				if (documentStore == null)
 				{
 					throw new NullReferenceException("The DocumentStore is not set. Please set the DocumentStore or make sure that the Common Service Locator can find the IDocumentStore and call Initialize on this provider.");
 				}
-				return _documentStore;
+				return documentStore;
 			}
-			set { _documentStore = value; }
+			set { documentStore = value; }
 		}        
 
 
@@ -52,9 +45,9 @@ namespace RavenDBMembership.Provider
                 config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
             }
 
-            if (_documentStore == null)
+            if (documentStore == null)
             {
-                _documentStore = RavenInitialiser.InitialiseDocumentStore(config);
+                documentStore = RavenInitialiser.InitialiseDocumentStore(config);
             }
 
             ApplicationName = string.IsNullOrEmpty(config["applicationName"]) ? System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath : config["applicationName"];

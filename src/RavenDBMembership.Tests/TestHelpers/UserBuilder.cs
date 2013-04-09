@@ -44,7 +44,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             return this;
         }
 
-        public UserBuilder WithPassword(String password)
+        public UserBuilder WithPasswordHashed(String password)
         {
             user.PasswordHash = PasswordUtil.HashPassword(password, user.PasswordSalt);
             return this;
@@ -82,7 +82,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         [Test]
         public void Build_WithPassword_ProvidesHashPassword()
         {
-            var sut = new UserBuilder().WithPassword("Hello World");
+            var sut = new UserBuilder().WithPasswordHashed("Hello World");
             var result = sut.Build();
 
             Assert.AreEqual(PasswordUtil.HashPassword("Hello World", result.PasswordSalt), result.PasswordHash);

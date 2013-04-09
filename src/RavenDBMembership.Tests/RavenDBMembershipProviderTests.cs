@@ -1,5 +1,6 @@
 ﻿using System.Configuration.Provider;
 using NUnit.Framework;
+using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
 using RavenDBMembership.Provider;
@@ -63,28 +64,24 @@ namespace RavenDBMembership.Tests
             Assert.AreEqual(MembershipCreateStatus.DuplicateEmail, status);
         }
 
-        /*
         [Test]
         public void CreateUser_WithDuplicateUsername_ReturnsDuplicateUsernameStatus()
         {
             //Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
             var existingUser = new UserBuilder().Build();
             AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
-            MembershipCreateStatus status;
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
 
             //Act
+            MembershipCreateStatus status;
             var newUser = sut.CreateUser(existingUser.Username, Password, UserEmail, PasswordQuestion, PasswordAnswer, true, null, out status);
 
             //Assert
             Assert.IsNull(newUser);
             Assert.AreEqual(MembershipCreateStatus.DuplicateUserName, status);
         }
-
-
-        //TODO create user tests:
-        // * actually create user with success
-        // * check that created user has hashed password and it can be validated
 
 
         // if password reset is enabled and question/answer is required, throw exception if these are not provided
@@ -148,6 +145,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_PasswordRegexSimplePassword_ReturnsNullAndInvalidPasswordStatus()
         {
             var config = new ConfigBuilder()
+                .WithMinNonAlfanumericCharacters(0)
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
             sut.Initialize(ProviderName, config);
@@ -162,11 +160,8 @@ namespace RavenDBMembership.Tests
             Assert.AreEqual(MembershipCreateStatus.InvalidPassword, status);
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-        
+        // actually create user with success
         [Test]
         public void CreateUser_CorrectInput_ShouldCreateUserRecord()
         {
@@ -175,88 +170,43 @@ namespace RavenDBMembership.Tests
 
             // act
             MembershipCreateStatus status;
-            var membershipUser = sut.CreateUser("ValidateableUsername", "Anon", "anon@anon.com", null, null, true, null, out status);
+            var membershipUser = sut.CreateUser(Username, Password, UserEmail, PasswordQuestion, PasswordAnswer, true, ProviderUserKey, out status);
 
             // Assert
             Assert.AreEqual(MembershipCreateStatus.Success, status);
             Assert.IsNotNull(membershipUser);
-            Assert.IsNotNull(membershipUser.ProviderUserKey);
-            Assert.AreEqual("ValidateableUsername", membershipUser.UserName);
-
         }
 
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
         [Test]
-        public void CreateUser_CorrectInput_HashesPasswordAndSecurityAnser()
+        public void ChangePassword()
         {
-            //Arrange
-            var user = new UserBuilder().WithPassword("1234ABCD").Build();
-            sut.Initialize(user.ApplicationName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
+            var existingUser = new UserBuilder().WithPasswordHashed("1234ABCD").Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
-            var session = sut.DocumentStore.OpenSession();
+            // Arrange
             MembershipCreateStatus status;
+            var membershipUser = sut.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
+            Assert.AreEqual(MembershipCreateStatus.Success, status);
+            Assert.NotNull(membershipUser);
 
-            //Act
-            var membershipUser = sut.CreateUser(user.Username, user.PasswordHash,
-                user.Email, user.PasswordQuestion, user.PasswordAnswer,
-                user.IsApproved, null, out status);
-            User createdUser = session.Load<User>(membershipUser.ProviderUserKey.ToString());
+            // Act
+            sut.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");
+            var o = -1;
+            var user = sut.FindUsersByName("dummyUser", 0, 0, out o);
 
-            //Assert
-            //Best I could think to do, not sure its possible to test encrypted strings for actual encryption
-            Assert.AreNotEqual(user.PasswordHash, createdUser.PasswordHash);
-            Assert.AreNotEqual(user.PasswordAnswer, createdUser.PasswordAnswer);
-
-        }
-
-        [Test]
-        public void EnableEmbeddableDocumentStore_should_throw_exception_if_not_set()
-        {
-            //Arrange                                       
-            var config = new ConfigBuilder()
-                .WithoutValue("enableEmbeddableDocumentStore").Build();
-
-            sut.DocumentStore = null;
-
-            Assert.Throws<ProviderException>(() => sut.Initialize("RavenDBMembership", config));
-        }
-
-        [Test]
-        public void EnableEmbeddableDocumentStore_should_be_of_type_EmbeddableDocumentStore()
-        {
-            //Arrange                            
-            var config = new ConfigBuilder()
-                .WithValue("enableEmbeddableDocumentStore", "true").Build();
-
-            sut.DocumentStore = null;
-
-
-            //Act
-            sut.Initialize("TestApp", config);
-
-            //Asset 
-            Assert.IsTrue(sut.DocumentStore.GetType() == typeof(EmbeddableDocumentStore));
-
-        }
-
-        [Test]
-        public void EnableEmbeddableDocumentStore_should_be_of_type_DocumentStore()
-        {
-            //Arrange                            
-            var config = new ConfigBuilder()
-                .WithValue("enableEmbeddableDocumentStore","false").Build();
-
-            sut.DocumentStore = null;
-            //Act
-            sut.Initialize("TestApp", config);
-
-            //Asset 
-            Assert.IsTrue(sut.GetType() == typeof(DocumentStore));
+            // Assert
+            Assert.True(sut.ValidateUser("dummyUser", "DCBA4321"));
         }
 
 
-
+        /*
         [Test]
         public void ValidateUserTest_should_return_false_if_username_is_null_or_empty()
         {
@@ -265,6 +215,8 @@ namespace RavenDBMembership.Tests
             Assert.IsFalse(sut.ValidateUser(null, null));
         }
 
+
+        
         [Test]
         public void ResetPasswordTest_if_EnablePasswordReset_is_not_enabled_throws_exception()
         {
@@ -281,28 +233,7 @@ namespace RavenDBMembership.Tests
 
 
 
-        [Test]
-        public void ChangePassword()
-        {
-            var existingUser = new UserBuilder().WithPassword("1234ABCD").Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
-            
-            // Arrange
-            MembershipCreateStatus status;
-            var membershipUser = sut.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
-            Assert.AreEqual(MembershipCreateStatus.Success, status);
-            Assert.NotNull(membershipUser);
 
-            // Act
-            sut.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");
-            var o = -1;
-            var user = sut.FindUsersByName("dummyUser", 0, 0, out o);
-
-            // Assert
-            Assert.True(sut.ValidateUser("dummyUser", "DCBA4321"));
-        }
 
         [Test]
         public void ChangePasswordQuestionAndAnwerTest_should_change_question_and_answer()
