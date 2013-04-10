@@ -1,4 +1,6 @@
-﻿using System.Configuration.Provider;
+﻿using System.Collections;
+using System.Collections.Specialized;
+using System.Configuration.Provider;
 using NUnit.Framework;
 using Raven.Client;
 using Raven.Client.Document;
@@ -178,33 +180,496 @@ namespace RavenDBMembership.Tests
         }
 
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        [Test]
+        public void ChangePassword_PasswordInvalidLength_ThrowsMembershipPasswordException()
+        {
+            // Arrange
+            var confg = new ConfigBuilder()
+                .WithMinimumPasswordLength(10)
+                .Build();
+            sut.Initialize(ProviderName, confg);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "short_)£1"));
+        }
 
 
         [Test]
-        public void ChangePassword()
+        public void ChangePassword_MinNumberOfAlphanumberic_ThrowsException()
         {
+            // Arrange
+            var confg = new ConfigBuilder()
+                .WithMinNonAlfanumericCharacters(10)
+                .Build();
+            sut.Initialize(ProviderName, confg);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "veryLong_butnotEnoughAlphanumeric"));
+        }
+
+        [Test]
+        public void ChangePassword_RegularExpressionStrength_ThrowsException()
+        {
+            // Arrange
+            var confg = new ConfigBuilder()
+                .WithMinNonAlfanumericCharacters(0)
+                .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
+                .Build();
+            sut.Initialize(ProviderName, confg);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "LongPasswordThatDoesNotMatchRegexp"));
+        }
+
+
+        [Test]
+        public void ChangePassword_IncorrectPassword_ThrowsException()
+        {
+            // Arrange
             sut.Initialize(ProviderName, new ConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
-            var existingUser = new UserBuilder().WithPasswordHashed("1234ABCD").Build();
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
             AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
-            // Arrange
-            MembershipCreateStatus status;
-            var membershipUser = sut.CreateUser("dummyUser", "1234ABCD", "hello@world.org", null, null, true, null, out status);
-            Assert.AreEqual(MembershipCreateStatus.Success, status);
-            Assert.NotNull(membershipUser);
-
-            // Act
-            sut.ChangePassword("dummyUser", "1234ABCD", "DCBA4321");
-            var o = -1;
-            var user = sut.FindUsersByName("dummyUser", 0, 0, out o);
-
-            // Assert
-            Assert.True(sut.ValidateUser("dummyUser", "DCBA4321"));
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, "incorrectPassword", Password));
         }
 
+        [Test]
+        public void ChangePassword_UserIsLockedOut_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithPasswordHashed(Password)
+                .Locked()
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "newPassword&**123_"));
+        }
+
+
+        [Test]
+        public void ChangePassword_UserNotApproved_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithPasswordHashed(Password)
+                .Approved(false)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "newPassword&**123_"));
+        }
+
+        [Test]
+        public void ChangePassword_IncorrectUsername_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword("IncorrectUsername", Password, "newPassword&**123_"));
+        }
+
+        [Test]
+        public void ChangePassword_OkPassword_ShouldChangePassword()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act 
+            const string newPassword = "newPassword&**123_";
+            sut.ChangePassword(existingUser.Username, Password, newPassword);
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var newHash = PasswordUtil.HashPassword(newPassword, user.PasswordSalt);
+                Assert.AreEqual(newHash, user.PasswordHash);
+            }
+        }
+
+
+        [Test]
+        public void ChangePasswordQuestionAndAnswer_PasswordNotCorrect_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePasswordQuestionAndAnswer(existingUser.Username, "incorrectPassword", "NewQuestion", "new Answer"));
+        }
+
+        [Test]
+        public void ChangePasswordQuestionAndAnswer_UserIsLocked_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithPasswordHashed(Password)
+                .Locked()
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePasswordQuestionAndAnswer(existingUser.Username, Password, "NewQuestion", "new Answer"));
+        }
+
+        [Test]
+        public void ChangePasswordQuestionAndAnswer_UserNotApproved_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithPasswordHashed(Password)
+                .Approved(false)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act && Assert
+            Assert.Throws<MembershipPasswordException>(() => sut.ChangePasswordQuestionAndAnswer(existingUser.Username, Password, "NewQuestion", "new Answer"));
+        }
+
+        [Test]
+        public void ChangePasswordQuestionAndAnswer_PasswordOk_ChangesQuestionAnswer()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            const string newPasswordQuestion = "Blah New Question";
+            const string newPasswordAnswer = "Blah New Answer";
+            sut.ChangePasswordQuestionAndAnswer(existingUser.Username, Password, newPasswordQuestion, newPasswordAnswer);
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var hashedAnswer = PasswordUtil.HashPassword(newPasswordAnswer, user.PasswordSalt);
+                Assert.AreEqual(newPasswordQuestion, user.PasswordQuestion);
+                Assert.AreEqual(hashedAnswer, user.PasswordAnswer);
+            }
+        }
+
+
+        [Test]
+        public void DeleteUser_WrongUsername_ThrowsException()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user = new UserBuilder().Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act && Assert
+            Assert.Throws<ProviderException>(() => sut.DeleteUser("WrongUsername", true));
+        }
+
+        [Test]
+        public void DeleteUser_CorrectUsername_DeletesUser()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user = new UserBuilder().Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            sut.DeleteUser(user.Username, true);
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var nullUser = session.Query<User>().FirstOrDefault(u => u.Username == user.Username);
+                Assert.IsNull(nullUser);
+            }
+        }
+
+        [Test]
+        public void FindUserByEmail_GivenPartialMatch_ReturnsCorrectUsers()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            const string matchedEmailPart = "job";
+            var user1 = new UserBuilder().WithUsername("user1")
+                .WithEmail("hello+" + matchedEmailPart + "@mail.com").Build();
+            var userNotMatched = new UserBuilder().WithEmail("Hello@world.com").Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user1);
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, userNotMatched);
+
+            // Act 
+            int totalRecords;
+            var result = sut.FindUsersByEmail(matchedEmailPart, 0, 10, out totalRecords);
+
+            // Assert
+            // convert MembershipCollection to a list of usernames
+            var users = new MembershipUser[result.Count];
+            result.CopyTo(users, 0);
+            var usernames = users.Select(u => u.UserName).ToList();
+
+            // Hack: here should really be three tests. But I can't be bothered
+            Assert.Contains(user1.Username, usernames); // first user included
+            Assert.False(usernames.Contains(userNotMatched.Username)); // second user excluded
+            Assert.AreEqual(1, totalRecords);
+        }
+
+        [Test]
+        public void FindUserByEmail_GivenLoadsOfMatches_CorrectPaging()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 20);
+            const int pageSize = 5;
+
+            // Act
+            int totalNumber;
+            var result = sut.FindUsersByEmail("@foo.bar", 0, pageSize, out totalNumber);
+
+            Assert.AreEqual(pageSize, result.Count);
+        }
+
+        [Test]
+        public void FindUserByName_GivenPartialMatch_ReturnsCorrectUsers()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user1 = new UserBuilder()
+                .WithUsername("user1")
+                .Build();
+            var userNotMatched = new UserBuilder()
+                .WithUsername("johnyBoy")
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user1);
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, userNotMatched);
+
+            // Act 
+            int totalRecords;
+            var result = sut.FindUsersByName("user", 0, 10, out totalRecords);
+
+            // Assert
+            // convert MembershipCollection to a list of usernames
+            var users = new MembershipUser[result.Count];
+            result.CopyTo(users, 0);
+            var usernames = users.Select(u => u.UserName).ToList();
+
+            // Hack: here should really be three tests. But I can't be bothered
+            Assert.Contains(user1.Username, usernames); // first user included
+            Assert.False(usernames.Contains(userNotMatched.Username)); // second user excluded
+            Assert.AreEqual(1, totalRecords);
+        }
+
+        [Test]
+        public void FindUserByName_GivenLoadsOfMatches_CorrectPaging()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 20);
+            const int pageSize = 5;
+
+            // Act
+            int totalNumber;
+            var result = sut.FindUsersByName("User", 0, pageSize, out totalNumber);
+
+            Assert.AreEqual(pageSize, result.Count);
+        }
+
+
+        [Test]
+        public void GetAllUsers_ShouldReturnAllUsers()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
+
+            // Act
+            int totalRecords;
+            var membershipUsers = sut.GetAllUsers(0, 10, out totalRecords);
+
+            // Assert
+            Assert.AreEqual(5, totalRecords);
+            Assert.AreEqual(5, membershipUsers.Count);
+        }
+
+        [Test]
+        public void GetAllUsers_SmalPageSize_PagingAmountIsObserved()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
+
+            // Act 
+            int totalRecords;
+            var membershipUsers = sut.GetAllUsers(0, 5, out totalRecords);
+
+            // Assert
+            Assert.AreEqual(10, totalRecords); // All users should be counted
+            Assert.AreEqual(5, membershipUsers.Count);
+
+        }
+
+        [Test]
+        public void GetNumberOfUsersOnline_OnlineUsersExist_AllOnlineReturned()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            const int numberOfOnlineUsers = 10;
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, numberOfOnlineUsers);
+
+            // Act
+            var result = sut.GetNumberOfUsersOnline();
+
+            // Assert
+            Assert.AreEqual(numberOfOnlineUsers, result);
+        }
+
+
+        [Test]
+        public void GetNumberOfUsersOnline_SomeOffline_OnlyOnlinecounted()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            const int numberOfOnlineUsers = 10;
+            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, numberOfOnlineUsers);
+
+            // make one user offline
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var offlineUser = session.Query<User>().FirstOrDefault(u => u.IsOnline);
+                offlineUser.LastActivityDate = DateTime.Now.AddDays(-5);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.GetNumberOfUsersOnline();
+
+            // Assert
+            Assert.AreEqual(numberOfOnlineUsers-1, result);
+        }
+
+
+        [Test]
+        public void GetPasswordTest_AnyInput_NotSupportedException()
+        {
+            Assert.Throws<NotSupportedException>(() => sut.GetPassword(Username, Password));
+        }
+
+
+        [Test]
+        public void GetUser_CorrectUsername_UsernamesMatch()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user = new UserBuilder().Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            var result = sut.GetUser(user.Username, false);
+
+            Assert.AreEqual(user.Id, result.ProviderUserKey);
+            Assert.AreEqual(user.Username, result.UserName);
+        }
+
+
+        [Test]
+        public void GetUser_WrongUsername_ReturnsNull()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user = new UserBuilder().Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            var result = sut.GetUser("Wrong-username", false);
+
+            Assert.IsNull(result);
+        }
+
+
+        [Test]
+        public void GetUser_AskedToUpdateTimestamp_UpdatesTimestamp()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user = new UserBuilder()
+                .WithLastActivityDate(DateTime.Now.AddDays(-10))
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            var result = sut.GetUser(user.Username, true);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsInstanceOf<MembershipUser>(result);
+            Assert.IsTrue(result.IsOnline);
+        }
 
         /*
         [Test]
@@ -233,169 +698,6 @@ namespace RavenDBMembership.Tests
 
 
 
-
-
-        [Test]
-        public void ChangePasswordQuestionAndAnwerTest_should_change_question_and_answer()
-        {
-            // Arrange                
-            MembershipCreateStatus status;
-            var fakeUser = new UserBuilder().WithPassword("1234ABCD").Build();
-            string newQuestion = "MY NAME", newAnswer = "John";
-
-
-            sut.Initialize(fakeUser.ApplicationName, new ConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
-
-            var membershipUser = sut.CreateUser(fakeUser.Username, fakeUser.PasswordHash, fakeUser.Email, fakeUser.PasswordQuestion,
-                fakeUser.PasswordAnswer, fakeUser.IsApproved, null, out status);
-
-            // Act
-            sut.ChangePasswordQuestionAndAnswer("John", "1234ABCD", newQuestion, newAnswer);
-
-
-            using (var session = sut.DocumentStore.OpenSession())
-            {
-                var user = session.Load<User>(membershipUser.ProviderUserKey.ToString());
-                Assert.AreEqual(newQuestion, user.PasswordQuestion);
-            }
-        }
-
-        [Test]
-        public void DeleteUser()
-        {
-            // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
-
-            MembershipCreateStatus status;
-            var membershipUser = sut.CreateUser("dummyUser", "1234ABCD", "dummyUser@world.com", null, null, true, null, out status);
-
-            // Act
-            sut.DeleteUser("dummyUser", true);
-
-            // Assert
-            Thread.Sleep(500);
-            using (var session = sut.DocumentStore.OpenSession())
-            {
-                Assert.AreEqual(0, session.Query<User>().Count());
-            }
-        }
-
-        //TODO fix the test
-        //[Test]
-        //public void GetNumberOfUsersOnlineTest_should_return_4_user()
-        //{
-        //    using (var session = sut.OpenSession())
-        //    {
-        //        // Arrange                    
-        //        for (int i = 0; i < 5; i++)
-        //        {
-        //            var u = CreateUserFake();
-        //            if (i == 4)
-        //                u.IsOnline = false;
-        //            u.Username = u.Username + i;
-        //            session.Store(u);                        
-        //        }                    
-        //        session.SaveChanges();                    
-
-        //        var config = CreateConfigFake();                    
-        //        _provider.Initialize(config["applicationName"], config);
-
-        //        // Act                     
-        //        int totalOnline = _provider.GetNumberOfUsersOnline();                    
-
-        //        // Assert
-        //        Assert.AreEqual(4, totalOnline);                    
-        //    }
-        //}
-
-        [Test]
-        public void GetAllUsersShouldReturnAllUsers()
-        {
-            // Arrange
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
-
-            // Act
-            int totalRecords;
-            var membershipUsers = sut.GetAllUsers(0, 10, out totalRecords);
-
-            // Assert
-            Assert.AreEqual(5, totalRecords);
-            Assert.AreEqual(5, membershipUsers.Count);
-        }
-
-        [Test]
-        public void FindUsersByUsernamePart()
-        {
-            // Arrange
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
-
-            // Act 
-            int totalRecords;
-            var membershipUsers = sut.FindUsersByName("ser", 0, 10, out totalRecords); // Usernames are User1 .. Usern
-
-            // Assert
-            Assert.AreEqual(5, totalRecords); // All users should be returned
-            Assert.AreEqual(5, membershipUsers.Count);
-        }
-
-        [Test]
-        public void FindUsersWithPaging()
-        {
-            // Arrange
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
-
-            // Act 
-            int totalRecords;
-            var membershipUsers = sut.GetAllUsers(0, 5, out totalRecords);
-
-            // Assert
-            Assert.AreEqual(10, totalRecords); // All users should be returned
-            Assert.AreEqual(5, membershipUsers.Count);
-
-        }
-
-        [Test]
-        public void FindUsersForDomain()
-        {
-            // Arrange
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
-
-            // Act
-            int totalRecords;
-            var membershipUsers = sut.FindUsersByEmail("@foo.bar", 0, 2, out totalRecords);
-            int totalRecordsForUnknownDomain;
-            var membershipUsersForUnknownDomain = sut.FindUsersByEmail("@foo.baz", 0, 2, out totalRecordsForUnknownDomain);
-
-            // Assert
-            Assert.AreEqual(10, totalRecords); // All users should be returned
-            Assert.AreEqual(2, membershipUsers.Count);
-            Assert.AreEqual(0, totalRecordsForUnknownDomain);
-            Assert.AreEqual(0, membershipUsersForUnknownDomain.Count);
-
-        }
-
-
-
-        [Test]
-        public void GetPasswordTest_Throws_NotSupportedException()
-        {
-            // Arrange                                                
-            var config = new ConfigBuilder().Build();
-
-            sut.Initialize("applicationName", config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
-
-            var user = new UserBuilder().WithPassword("1234ABCD").Build();
-            MembershipCreateStatus status;
-            sut.CreateUser(user.Username, user.PasswordHash, user.Email, user.PasswordQuestion, user.PasswordAnswer,
-                user.IsApproved, null, out status);
-
-
-            Assert.Throws<NotSupportedException>(() => sut.GetPassword(user.Username, "WrongPasswordAnswerAnswer"));
-
-        }
 
         [Test]
         public void UnlockUserTest_user_is_actually_unlocked_and_returns_true()
@@ -503,27 +805,6 @@ namespace RavenDBMembership.Tests
         }
 
 
-        [Test]
-        public void UserIsNotOnline()
-        {
-            var user = new User()
-                           {
-                               LastActivityDate = DateTime.Now.AddHours(-50)
-                           };
-
-            Assert.IsFalse(user.IsOnline);
-        }
-
-
-        [Test]
-        public void UserIsOnline()
-        {
-            var user = new User()
-                           {
-                               LastActivityDate = DateTime.Now.AddMinutes(-10)
-                           };
-            Assert.IsTrue(user.IsOnline);
-        }
         */
     }
 }

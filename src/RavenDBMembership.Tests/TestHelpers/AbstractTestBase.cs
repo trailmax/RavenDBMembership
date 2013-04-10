@@ -93,15 +93,20 @@ namespace RavenDBMembership.Tests.TestHelpers
             }
         }
 
-        protected static List<User> CreateDummyUsers(int numberOfUsers)
+        protected static IEnumerable<User> CreateDummyUsers(int numberOfUsers)
         {
             var users = new List<User>(numberOfUsers);
-            for (int i = 0; i < numberOfUsers; i++)
+            for (var i = 0; i < numberOfUsers; i++)
             {
-                users.Add(new User { Username = String.Format("User{0}", i), Email = String.Format("User{0}@foo.bar", i) });
+                var user = new UserBuilder()
+                    .WithUsername(String.Format("User{0}", i))
+                    .WithEmail(String.Format("User{0}@foo.bar", i))
+                    .Build();
+                users.Add(user);
             }
             return users;
         }
+
 
         public static void InjectProvider(ProviderCollection collection, ProviderBase provider)
         {

@@ -56,6 +56,31 @@ namespace RavenDBMembership.Tests.TestHelpers
             user.PasswordAnswer = PasswordUtil.HashPassword(answer.ToLower(), user.PasswordSalt);
             return this;
         }
+
+        public UserBuilder Locked(bool isLocked = true)
+        {
+            user.IsLockedOut = isLocked;
+            return this;
+        }
+
+        public UserBuilder Approved(bool isApproved = true)
+        {
+            user.IsApproved = isApproved;
+            return this;
+        }
+
+        public UserBuilder WithEmail(string email)
+        {
+            user.Email = email;
+            return this;
+        }
+
+        public UserBuilder WithLastActivityDate(DateTime date)
+        {
+            user.LastActivityDate = date;
+
+            return this;
+        }
     }
 
     [TestFixture]

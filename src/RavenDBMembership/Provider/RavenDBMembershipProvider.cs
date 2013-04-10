@@ -280,7 +280,7 @@ namespace RavenDBMembership.Provider
 
             using (var session = DocumentStore.OpenSession())
             {
-                User user = (from u in session.Query<User>()
+                var user = (from u in session.Query<User>()
                              where u.Username == username && u.ApplicationName == ApplicationName
                              select u).SingleOrDefault();
 
@@ -298,26 +298,17 @@ namespace RavenDBMembership.Provider
         {
             using (var session = DocumentStore.OpenSession())
             {
-                try
+                var q = from u in session.Query<User>()
+                        where u.Username == username && u.ApplicationName == ApplicationName
+                        select u;
+                var user = q.SingleOrDefault();
+                if (user == null)
                 {
-                    var q = from u in session.Query<User>()
-                            where u.Username == username && u.ApplicationName == ApplicationName
-                            select u;
-                    var user = q.SingleOrDefault();
-                    if (user == null)
-                    {
-                        throw new NullReferenceException("The user could not be deleted, they don't exist.");
-                    }
-                    session.Delete(user);
-                    session.SaveChanges();
-                    return true;
+                    throw new ProviderException("The user could not be deleted. No user found with this username");
                 }
-                catch (Exception ex)
-                {
-                    //TODO Log
-                    EventLog.WriteEntry(ApplicationName, ex.ToString());
-                    return false;
-                }
+                session.Delete(user);
+                session.SaveChanges();
+                return true;
             }
         }
 
@@ -428,40 +419,31 @@ namespace RavenDBMembership.Provider
 
             using (var session = DocumentStore.OpenSession())
             {
-                try
+                var user = session.Query<User>()
+                    .SingleOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
+                if (user == null)
                 {
-                    var user = session.Query<User>()
-                        .SingleOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
-                    if (user == null)
-                    {
-                        throw new ProviderException("The user could not be found.");
-                    }
-                    if (user.IsLockedOut)
-                    {
-                        throw new ProviderException("User is locked out. Can not reset password.");
-                    }
-                    if (!user.IsApproved)
-                    {
-                        throw new ProviderException("User has not been approved by administrators. Can not reset password.");
-                    }
+                    throw new ProviderException("The user could not be found.");
+                }
+                if (user.IsLockedOut)
+                {
+                    throw new ProviderException("User is locked out. Can not reset password.");
+                }
+                if (!user.IsApproved)
+                {
+                    throw new ProviderException("User has not been approved by administrators. Can not reset password.");
+                }
 
-                    if (RequiresQuestionAndAnswer && user.PasswordAnswer != EncodePassword(answer, user.PasswordSalt))
-                    {
-                        user.FailedPasswordAttempts++;
-                        session.SaveChanges();
-                        throw new MembershipPasswordException("The answer to the security question is incorrect.");
-                    }
-                    var newPassword = Membership.GeneratePassword(8, 2);
-                    user.PasswordHash = EncodePassword(newPassword, user.PasswordSalt);
-                    session.SaveChanges();
-                    return newPassword;
-                }
-                catch (Exception ex)
+                if (RequiresQuestionAndAnswer && user.PasswordAnswer != EncodePassword(answer, user.PasswordSalt))
                 {
-                    //TODO log
-                    EventLog.WriteEntry(ApplicationName, ex.ToString());
-                    throw;
+                    user.FailedPasswordAttempts++;
+                    session.SaveChanges();
+                    throw new MembershipPasswordException("The answer to the security question is incorrect.");
                 }
+                var newPassword = Membership.GeneratePassword(8, 2);
+                user.PasswordHash = EncodePassword(newPassword, user.PasswordSalt);
+                session.SaveChanges();
+                return newPassword;
             }
         }
 
@@ -534,15 +516,9 @@ namespace RavenDBMembership.Provider
 
             using (var session = DocumentStore.OpenSession())
             {
-                //var userLoaded = session.Load<User>("authorization/users/1");
-
                 var user = (from u in session.Query<User>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
-                //var user = session.Query<User>().SingleOrDefault(u => u.Username == username && u.ApplicationName == this.ApplicationName);
-                //var userLinq2 = session.Query<User>().Where(u => u.Username == userLoaded.Username).Select(u => u).ToList();
-                
-
 
                 if (user == null || user.IsLockedOut || !user.IsApproved)
                 {
@@ -614,8 +590,9 @@ namespace RavenDBMembership.Provider
 
         private MembershipUser UserToMembershipUser(User user)
         {
+            // TODO last password changed and other stuff is required.
             return new MembershipUser(this.providerName, user.Username, user.Id, user.Email, user.PasswordQuestion, user.Comment, user.IsApproved, user.IsLockedOut
-                , user.CreationDate, user.LastLoginDate.HasValue ? user.LastLoginDate.Value : new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1), new DateTime(1900, 1, 1));
+                , user.CreationDate, user.LastLoginDate.HasValue ? user.LastLoginDate.Value : new DateTime(1900, 1, 1), user.LastActivityDate, new DateTime(1900, 1, 1), new DateTime(1900, 1, 1));
         }
 
 
@@ -629,16 +606,6 @@ namespace RavenDBMembership.Provider
             var encodedPassword = PasswordUtil.HashPassword(password, salt);
 
             return encodedPassword;
-        }
-
-
-        private string GetConfigValue(string value, string defaultValue)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return defaultValue;
-            }
-            return value;
         }
 
         #endregion

@@ -71,6 +71,7 @@
     <Compile Include="TestHelpers\ConfigBuilder.cs" />
     <Compile Include="TestHelpers\UserBuilder.cs" />
     <Compile Include="RavenDBMembershipProviderTests.cs" />
+    <Compile Include="UserTests.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>
