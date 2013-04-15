@@ -616,7 +616,7 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void GetUser_CorrectUsername_UsernamesMatch()
+        public void GetUserByUsername_CorrectUsername_UsernamesMatch()
         {
             // Arrange
             sut.Initialize(ProviderName, new ConfigBuilder().Build());
@@ -634,7 +634,7 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void GetUser_WrongUsername_ReturnsNull()
+        public void GetUserByUsername_WrongUsername_ReturnsNull()
         {
             // Arrange
             sut.Initialize(ProviderName, new ConfigBuilder().Build());
@@ -651,7 +651,7 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void GetUser_AskedToUpdateTimestamp_UpdatesTimestamp()
+        public void GetUserByUsername_AskedToUpdateTimestamp_UpdatesTimestamp()
         {
             // Arrange
             sut.Initialize(ProviderName, new ConfigBuilder().Build());
@@ -671,6 +671,125 @@ namespace RavenDBMembership.Tests
             Assert.IsTrue(result.IsOnline);
         }
 
+        [Test]
+        public void GetUserByProviderUserKey_CorrectKey_UserReturned()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var key = Guid.NewGuid().ToString();
+
+            var user = new UserBuilder()
+                .WithProviderUserKey(key)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            var result = sut.GetUser((object)key, false);
+
+            Assert.AreEqual(user.Id, result.ProviderUserKey);
+        }
+
+        [Test]
+        public void GetUserByProviderUserKey_IncorrectKey_NullReturned()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var user = new UserBuilder()
+                .WithProviderUserKey(Guid.NewGuid().ToString())
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            var result = sut.GetUser((object)Guid.NewGuid().ToString(), false);
+
+            Assert.IsNull(result);
+        }
+
+
+        [Test]
+        public void GetUserByProviderUserKey_AskedToUpdateTimestamp_UpdatesTimestamp()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var key = Guid.NewGuid().ToString();
+
+            var user = new UserBuilder()
+                .WithLastActivityDate(DateTime.Now.AddDays(-10))
+                .WithProviderUserKey(key)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            // Act
+            var result = sut.GetUser((object)key, true);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsInstanceOf<MembershipUser>(result);
+            Assert.IsTrue(result.IsOnline);
+        }
+
+
+        [Test]
+        public void GetUserNameByEmail_CorrectEmail_ReturnsUsername()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+
+            var user = new UserBuilder()
+                .WithEmail(UserEmail)
+                .WithUsername(Username)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            var result = sut.GetUserNameByEmail(UserEmail);
+
+            Assert.AreEqual(Username, result);
+        }
+
+        [Test]
+        public void GetUserNameByEmail_IncorrectEmail_ReturnsNull()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+
+            var user = new UserBuilder()
+                .WithEmail(UserEmail)
+                .WithUsername(Username)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+
+            var result = sut.GetUserNameByEmail("IncorrectEmail");
+
+            Assert.IsNull(result);
+        }
+
+
+        [Test]
+        public void ResetPassword_PasswordResetDisabled_ThrowsException()
+        {
+            //Arrange
+            var config = new ConfigBuilder()
+                .EnablePasswordReset(false)
+                .Build();
+
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            //Act and Assert
+            Assert.Throws<NotSupportedException>(() => sut.ResetPassword(null, null));
+        }
+
+
         /*
         [Test]
         public void ValidateUserTest_should_return_false_if_username_is_null_or_empty()
@@ -681,20 +800,6 @@ namespace RavenDBMembership.Tests
         }
 
 
-        
-        [Test]
-        public void ResetPasswordTest_if_EnablePasswordReset_is_not_enabled_throws_exception()
-        {
-            //Arrange
-            var config = new ConfigBuilder()
-                .WithValue("enablePasswordReset", "false").Build();
-
-            sut.Initialize(config["applicationName"], config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
-
-            //Act and Assert
-            Assert.Throws<NotSupportedException>(() => sut.ResetPassword(null, null));
-        }
 
 
 

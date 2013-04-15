@@ -40,7 +40,7 @@ namespace RavenDBMembership.Tests.TestHelpers
 
         public UserBuilder WithUsername(String username)
         {
-            user.Username = username;
+            user.Username = username.ToLower();
             return this;
         }
 
@@ -81,6 +81,13 @@ namespace RavenDBMembership.Tests.TestHelpers
 
             return this;
         }
+
+        public UserBuilder WithProviderUserKey(string provideruserkey)
+        {
+            user.Id = provideruserkey;
+
+            return this;
+        }
     }
 
     [TestFixture]
@@ -99,9 +106,9 @@ namespace RavenDBMembership.Tests.TestHelpers
         [Test]
         public void Build_WithUsername_ReturnsCorrectUsername()
         {
-            var sut = new UserBuilder().WithUsername("John");
+            var sut = new UserBuilder().WithUsername("john");
             var result = sut.Build();
-            Assert.AreEqual("John", result.Username);
+            Assert.AreEqual("john", result.Username);
         }
 
         [Test]

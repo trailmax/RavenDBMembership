@@ -322,7 +322,7 @@ namespace RavenDBMembership.Provider
         public override MembershipUserCollection FindUsersByName(string usernameToMatch, int pageIndex,
             int pageSize, out int totalRecords)
         {
-            return FindUsers(u => u.Username.Contains(usernameToMatch), pageIndex, pageSize, out totalRecords);
+            return FindUsers(u => u.Username.Contains(usernameToMatch.ToLower()), pageIndex, pageSize, out totalRecords);
         }
 
 
