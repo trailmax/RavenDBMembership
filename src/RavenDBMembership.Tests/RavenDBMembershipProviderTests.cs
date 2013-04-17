@@ -1,6 +1,5 @@
 ﻿using System.Configuration.Provider;
 using NUnit.Framework;
-using Ploeh.AutoFixture;
 using RavenDBMembership.Provider;
 using System;
 using System.Linq;
