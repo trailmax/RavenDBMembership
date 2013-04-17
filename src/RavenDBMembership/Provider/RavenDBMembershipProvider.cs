@@ -165,7 +165,7 @@ namespace RavenDBMembership.Provider
             user.ApplicationName = ApplicationName.ToLower();
             user.CreationDate = DateTime.Now;
             user.PasswordQuestion = passwordQuestion.ToLower();
-            user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : EncodePassword(passwordAnswer, user.PasswordSalt);
+            user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : EncodePassword(passwordAnswer.ToLower(), user.PasswordSalt);
             user.IsApproved = isApproved;
             user.IsLockedOut = false;
             user.LastActivityDate = DateTime.Now;
@@ -285,7 +285,7 @@ namespace RavenDBMembership.Provider
                              select u).SingleOrDefault();
 
                 user.PasswordQuestion = newPasswordQuestion;
-                user.PasswordAnswer = EncodePassword(newPasswordAnswer, user.PasswordSalt);
+                user.PasswordAnswer = EncodePassword(newPasswordAnswer.ToLower(), user.PasswordSalt);
                 session.SaveChanges();
             }
             return true;
@@ -434,7 +434,7 @@ namespace RavenDBMembership.Provider
                     throw new ProviderException("User has not been approved by administrators. Can not reset password.");
                 }
 
-                if (RequiresQuestionAndAnswer && user.PasswordAnswer != EncodePassword(answer, user.PasswordSalt))
+                if (RequiresQuestionAndAnswer && user.PasswordAnswer != EncodePassword(answer.ToLower(), user.PasswordSalt))
                 {
                     user.FailedPasswordAttempts++;
                     session.SaveChanges();
@@ -455,7 +455,9 @@ namespace RavenDBMembership.Provider
                 var user = session.Query<User>().SingleOrDefault(x => x.Username == userName && x.ApplicationName == ApplicationName);
 
                 if (user == null)
+                {
                     return false;
+                }
 
                 user.IsLockedOut = false;
                 session.SaveChanges();
@@ -494,6 +496,7 @@ namespace RavenDBMembership.Provider
                 dbUser.IsApproved = user.IsApproved;
                 dbUser.IsLockedOut = user.IsLockedOut;
                 dbUser.LastActivityDate = user.LastActivityDate;
+                dbUser.Comment = user.Comment;
 
                 session.SaveChanges();
             }

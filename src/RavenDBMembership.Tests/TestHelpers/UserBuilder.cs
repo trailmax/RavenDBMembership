@@ -88,6 +88,12 @@ namespace RavenDBMembership.Tests.TestHelpers
 
             return this;
         }
+
+        public UserBuilder WithFailedPasswordAttempts(int count)
+        {
+            user.FailedPasswordAttempts = count;
+            return this;
+        }
     }
 
     [TestFixture]
@@ -139,11 +145,11 @@ namespace RavenDBMembership.Tests.TestHelpers
         public void Build_WithQuestionAnswer_ProvidesHashOfAnswer()
         {
             const string question = "random";
-            const string answer = "another random";
-            var sut = new UserBuilder().WithQuestionAnswer(question, answer.ToLower()).Build();
+            const string answer = "anotHer RanDom";
+            var sut = new UserBuilder().WithQuestionAnswer(question, answer).Build();
 
             Assert.AreEqual(question, sut.PasswordQuestion);
-            var expected = PasswordUtil.HashPassword(answer, sut.PasswordSalt);
+            var expected = PasswordUtil.HashPassword(answer.ToLower(), sut.PasswordSalt);
             Assert.AreEqual(expected, sut.PasswordAnswer);
         }
     }
