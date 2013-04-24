@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Configuration.Provider;
 using System.Security.Cryptography;
 using System.Text;
-using CryptSharp;
 using CryptSharp.Utility;
 
 namespace RavenDBMembership
@@ -20,6 +20,11 @@ namespace RavenDBMembership
 
         public static string HashPassword(string pass, string salt)
         {
+            if (string.IsNullOrEmpty(salt))
+            {
+                throw new ProviderException("A random salt is required with hashed passwords.");
+            }
+
             // these number must not be changed, otherwise strings generated will be different and user's won't be able to login.
             var derivedBytes = new byte[128];   // 128 is a number of bytes taken back from the encoding stream
             const int cost = 512; // cost of the algorithm - how many time we go round. Must be power of 2

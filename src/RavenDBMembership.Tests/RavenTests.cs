@@ -2,7 +2,6 @@
 using System.Linq;
 using NUnit.Framework;
 using Raven.Client.Embedded;
-using RavenDBMembership.Provider;
 
 namespace RavenDBMembership.Tests
 {

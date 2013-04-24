@@ -1,6 +1,5 @@
 ﻿using System.Configuration.Provider;
 using NUnit.Framework;
-using RavenDBMembership.Provider;
 using System;
 using System.Linq;
 using System.Web.Security;
@@ -123,7 +122,7 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             var config = new ConfigBuilder()
-                .WithMinNonAlfanumericCharacters(2).Build();
+                .WithMinNonAlphanumericCharacters(2).Build();
             sut.Initialize(ProviderName, config);
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
@@ -141,7 +140,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_PasswordRegexSimplePassword_ReturnsNullAndInvalidPasswordStatus()
         {
             var config = new ConfigBuilder()
-                .WithMinNonAlfanumericCharacters(0)
+                .WithMinNonAlphanumericCharacters(0)
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
             sut.Initialize(ProviderName, config);
@@ -197,7 +196,7 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             var confg = new ConfigBuilder()
-                .WithMinNonAlfanumericCharacters(10)
+                .WithMinNonAlphanumericCharacters(10)
                 .Build();
             sut.Initialize(ProviderName, confg);
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
@@ -214,7 +213,7 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             var confg = new ConfigBuilder()
-                .WithMinNonAlfanumericCharacters(0)
+                .WithMinNonAlphanumericCharacters(0)
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
             sut.Initialize(ProviderName, confg);
@@ -448,7 +447,7 @@ namespace RavenDBMembership.Tests
             result.CopyTo(users, 0);
             var usernames = users.Select(u => u.UserName).ToList();
 
-            // Hack: here should really be three tests. But I can't be bothered
+            // here should really be three tests. But I can't be bothered
             Assert.Contains(user1.Username, usernames); // first user included
             Assert.False(usernames.Contains(userNotMatched.Username)); // second user excluded
             Assert.AreEqual(1, totalRecords);
@@ -497,7 +496,7 @@ namespace RavenDBMembership.Tests
             result.CopyTo(users, 0);
             var usernames = users.Select(u => u.UserName).ToList();
 
-            // Hack: here should really be three tests. But I can't be bothered
+            //  here should really be three tests. But I can't be bothered
             Assert.Contains(user1.Username, usernames); // first user included
             Assert.False(usernames.Contains(userNotMatched.Username)); // second user excluded
             Assert.AreEqual(1, totalRecords);
@@ -1082,82 +1081,172 @@ namespace RavenDBMembership.Tests
             }
         }
 
-        /*
         [Test]
-        public void ValidateUserTest_should_return_false_if_username_is_null_or_empty()
+        public void ValidateUser_EmptyUsername_ReturnsFalse()
         {
-            //Act and Assert
-            Assert.IsFalse(sut.ValidateUser("", ""));
-            Assert.IsFalse(sut.ValidateUser(null, null));
+            Assert.IsFalse(sut.ValidateUser(String.Empty, Password));
+        }
+
+        [Test]
+        public void ValidateUser_EmptyPassword_ReturnsFalse()
+        {
+            Assert.IsFalse(sut.ValidateUser(Username, String.Empty));
         }
 
 
-
-
-
-        
         [Test]
-        public void IsLockedOut_test_true_when_failedPasswordAttempts_is_gt_maxPasswordAttempts()
+        public void ValidateUser_NoUser_ReturnsFalse()
         {
-            //Arrange
-            var config = new ConfigBuilder().Build();
-
-            var user = new UserBuilder().WithPassword("1234ABCD").Build();
-
-            sut.Initialize("applicationName", config);
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
+            var existingUser = new UserBuilder().Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
-            //Act
-            using (var session = sut.DocumentStore.OpenSession())
-            {
-                session.Store(user);
-                session.SaveChanges();
-            }
-            for (int i = 0; i < 10; i++)
-            {
-                sut.ValidateUser("John", "wrongpassword");
-            }
-            using (var session = sut.DocumentStore.OpenSession())
-            {
-                user = session.Query<User>().Where(x => x.Username == user.Username && x.ApplicationName == user.ApplicationName).SingleOrDefault();
-            }
+            // Act
+            var result = sut.ValidateUser("WrongUsername", Password);
 
-            //Assert 
-            Assert.IsTrue(user.IsLockedOut);
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+
+        [Test]
+        public void ValidateUser_userIsLocked_ReturnsFalse()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .Locked(true)
+                .WithPasswordHashed(Password)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            var result = sut.ValidateUser(existingUser.Username, Password);
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+
+        [Test]
+        public void ValidateUser_UserNotApproved_ReturnsFalse()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .Approved(false)
+                .WithPasswordHashed(Password)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            var result = sut.ValidateUser(existingUser.Username, Password);
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+
+        [Test]
+        public void ValidateUser_AllCorrect_ReturnsTrue()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithPasswordHashed(Password)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            var result = sut.ValidateUser(existingUser.Username, Password);
+
+            // Assert
+            Assert.IsTrue(result);
         }
 
         [Test]
-        public void IsLockedOut_test_false_when_failedPasswordAttempts_is_gt_maxPasswordAttempts_and_passwordWindow_is_already_past()
+        public void ValidateUser_AllCorrect_ResetsUserCounters()
         {
-            //Arrange
-            var config = new ConfigBuilder().WithValue("passwordAttemptWindow", "0").Build();
-
-            var user = new UserBuilder().WithPassword("1234ABCD").Build();
-
-            sut.Initialize("applicationName", config);
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
-            //Act
-            using (var session = sut.DocumentStore.OpenSession())
-            {
-                session.Store(user);
-                session.SaveChanges();
-            }
-            for (int i = 0; i < 10; i++)
-            {
-                sut.ValidateUser("John", "wrongpassword");
-            }
-            using (var session = sut.DocumentStore.OpenSession())
-            {
-                user = session.Query<User>().Where(x => x.Username == user.Username && x.ApplicationName == user.ApplicationName).SingleOrDefault();
-            }
+            var existingUser = new UserBuilder()
+                .WithFailedPasswordAttempts(-1)
+                .WithPasswordHashed(Password)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
-            //Assert 
-            Assert.IsFalse(user.IsLockedOut);
+            // Act
+            sut.ValidateUser(existingUser.Username, Password);
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                Assert.AreEqual(0, user.FailedPasswordAttempts);
+            }
+        }
+
+        [Test]
+        public void ValidateUser_IncorrectPassword_IncreasesCounter()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithFailedPasswordAttempts(-1)
+                .Build();
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            sut.ValidateUser(existingUser.Username, "WrongPassword");
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                Assert.AreEqual(0, user.FailedPasswordAttempts);
+            }
         }
 
 
-        */
+        [Test]
+        public void ValidateUser_IncorrectPasswordTwoTimes_LocksUser()
+        {
+            // Arrange
+            var config = new ConfigBuilder()
+                .WithMaxInvalidPasswordAttempts(2)
+                .Build();
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithUsername(Username)
+                .Build();
+
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            sut.ValidateUser(existingUser.Username, "WrongPassword");
+            sut.ValidateUser(existingUser.Username, "AnotherWrongPassword");
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                Assert.True(user.IsLockedOut);
+            }
+        }
     }
 }

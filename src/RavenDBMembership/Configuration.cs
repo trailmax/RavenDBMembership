@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 
 namespace RavenDBMembership
 {
-    public class Configuration
+    internal class Configuration
     {
         private readonly NameValueCollection config;
 
@@ -14,10 +14,6 @@ namespace RavenDBMembership
 
         public String Description()
         {
-            //if (String.IsNullOrEmpty(config["description"]))
-            //{
-            //    config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
-            //}
             return config["description"];
         }
 
@@ -87,15 +83,9 @@ namespace RavenDBMembership
         }
 
 
-
-
         private static string GetConfigValue(string value, string defaultValue)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                return defaultValue;
-            }
-            return value;
+            return string.IsNullOrEmpty(value) ? defaultValue : value;
         }
     }
 }

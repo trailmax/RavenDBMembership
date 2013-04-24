@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using NUnit.Framework;
 
 namespace RavenDBMembership.Tests.TestHelpers
@@ -24,7 +21,7 @@ namespace RavenDBMembership.Tests.TestHelpers
                 LastActivityDate = DateTime.Now,
                 IsApproved = true,
                 Comment = "A FAKE USER",
-                ApplicationName = "UnitTest",
+                ApplicationName = "/",
                 CreationDate = DateTime.Now,
                 LastLoginDate = DateTime.Now,
                 FailedPasswordAttempts = 0,

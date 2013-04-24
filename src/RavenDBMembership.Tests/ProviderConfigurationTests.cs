@@ -1,75 +1,91 @@
 ﻿using System;
 using System.Web.Security;
 using NUnit.Framework;
-using RavenDBMembership.Tests.TestHelpers;
 
 namespace RavenDBMembership.Tests
 {
-    //TODO rename test methods
     [TestFixture]
-    class ProviderConfigurationTests : AbstractTestBase
+    class ProviderConfigurationTests
     {
         private const string ProviderName = "RavenTest";
 
-        [TestCase("true", Result = true)]
-        [TestCase("false", Result = false)]
-        public bool Password_reset_should_be_enabled_fromConfig(String value)
+        private RavenDBMembershipProvider sut;
+
+        [SetUp]
+        public void SetUp()
+        {
+            sut = new RavenDBMembershipProvider();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (sut.DocumentStore != null)
+            {
+                sut.DocumentStore.Dispose();
+            }
+        }
+
+
+        [TestCase(true, Result = true)]
+        [TestCase(false, Result = false)]
+        public bool Initialise_EnabledPasswordReset_ConfiguredCorrectly(Boolean value)
         {
             var config = new ConfigBuilder()
-                .WithValue("enablePasswordReset", value).Build();
+                .EnablePasswordReset(value)
+                .Build();
 
-            Provider.Initialize("", config);
+            sut.Initialize("", config);
 
-            return Provider.EnablePasswordReset;
+            return sut.EnablePasswordReset;
         }
 
 
 
 
         [Test]
-        public void AppName_Should_take_from_config()
+        public void Initialise_GivenApplicationName_ConfiguresCorrectly()
         {
             var config = new ConfigBuilder()
-                .WithValue("applicationName", "Some random name").Build();
+                .WithApplicationName("Some random name")
+                .Build();
 
-            Provider.Initialize("thing that should not be", config);
+            sut.Initialize("thing that should not be", config);
 
-            Assert.AreEqual("Some random name", Provider.ApplicationName);
+            Assert.AreEqual("Some random name", sut.ApplicationName);
         }
 
 
         [Test]
-        public void EnablePasswordRetrievel_should_return_true_from_config()
+        public void EnablePasswordRetrieval_Always_ReturnsFalse()
         {
-            bool enabled = Provider.EnablePasswordRetrieval;
+            var result = sut.EnablePasswordRetrieval;
 
-            Assert.IsFalse(enabled);
+            Assert.IsFalse(result);
         }
-
-
+        
 
         [Test]
-        public void RequiresUniqueEmailTest_should_return_true_from_config()
+        public void RequiresUniqueEmail_Always_ReturnsTrue()
         {
-            var config = new ConfigBuilder().Build();
+            var result = sut.RequiresUniqueEmail;
 
-            Provider.Initialize(ProviderName, config);
-
-            Assert.IsTrue(Provider.RequiresUniqueEmail);
+            Assert.IsTrue(result);
         }
 
 
-        [TestCase("", Result = 5)]
-        [TestCase("1", Result = 1)]
-        [TestCase("55", Result = 55)]
-        public int MaxInvalidPasswordAttemptsTest_should_take_from_config(String value)
+        [TestCase(0, Result = 0)]
+        [TestCase(1, Result = 1)]
+        [TestCase(55, Result = 55)]
+        public int Initialise_GivenMaxInvalidPasswordAttempts_ConfiguresCorrectly(int value)
         {
             var config = new ConfigBuilder()
-                .WithValue("maxInvalidPasswordAttempts", value).Build();
+                .WithMaxInvalidPasswordAttempts(value)
+                .Build();
 
-            Provider.Initialize(ProviderName, config);
+            sut.Initialize(ProviderName, config);
 
-            return Provider.MaxInvalidPasswordAttempts;
+            return sut.MaxInvalidPasswordAttempts;
         }
 
 
@@ -78,45 +94,54 @@ namespace RavenDBMembership.Tests
         [TestCase("1", Result = 1)]
         [TestCase("2", Result = 2)]
         [TestCase("64", Result = 64)]
-        public int MinRequiredNonalphanumericCharactersTest_should_take_from_config(string value)
+        public int Initialise_WithMinAlphanumericChar_ConfiguresCorrectly(string value)
         {
             var config = new ConfigBuilder()
                 .WithValue("minRequiredNonAlphaNumericCharacters", value).Build();
-            Provider.Initialize(ProviderName, config);
+            sut.Initialize(ProviderName, config);
 
-            return Provider.MinRequiredNonAlphanumericCharacters;
+            return sut.MinRequiredNonAlphanumericCharacters;
         }
 
         [TestCase("", Result = 7)]
         [TestCase("2", Result = 2)]
         [TestCase("32", Result = 32)]
-        public int MinRequiredPasswordLength_should_take_from_config(string value)
+        public int Initialise_WithMinPasswordLength_ConfiguresCorrectly(string value)
         {
             var config = new ConfigBuilder()
                 .WithValue("minRequiredPasswordLength", value).Build();
-            Provider.Initialize(ProviderName, config);
+            sut.Initialize(ProviderName, config);
 
-            return Provider.MinRequiredPasswordLength;
+            return sut.MinRequiredPasswordLength;
         }
 
         [TestCase("true", Result = true)]
         [TestCase("false", Result = false)]
         [TestCase("", Result = false)]
-        public bool RequiresQuestionAndAnswerTest_should_return_true_from_config(string value)
+        public bool Initialise_WithRequiredQA_ConfiguresCorrectly(string value)
         {
             var config = new ConfigBuilder()
                 .WithValue("requiresQuestionAndAnswer", value).Build();
 
-            Provider.Initialize(ProviderName, config);
+            sut.Initialize(ProviderName, config);
 
-            return Provider.RequiresQuestionAndAnswer;
+            return sut.RequiresQuestionAndAnswer;
         }
 
 
         [Test]
-        public void PasswordFormatTest_should_return_encrypted_from_config()
+        public void PasswordFormat_Always_Hashed()
         {
-            Assert.AreEqual(MembershipPasswordFormat.Hashed, Provider.PasswordFormat);
+            var result = sut.PasswordFormat;
+
+            Assert.AreEqual(MembershipPasswordFormat.Hashed, result);
         }
+
+        [Test]
+        public void Initialise_ConfigNull_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentNullException>(() => sut.Initialize("", null));
+        }
+
     }
 }

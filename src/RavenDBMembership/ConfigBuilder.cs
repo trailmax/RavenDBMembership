@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
-using NUnit.Framework;
 
-namespace RavenDBMembership.Tests.TestHelpers
+namespace RavenDBMembership
 {
     public class ConfigBuilder
     {
@@ -12,16 +11,15 @@ namespace RavenDBMembership.Tests.TestHelpers
         {
             config = new NameValueCollection()
                          {
-                            {"applicationName", "UnitTest"},
-
-                            {"maxInvalidPasswordAttempts", "5"},
-                            {"passwordAttemptWindow", "10"},
-                            {"minRequiredNonAlphaNumericCharacters", "1"},
-                            {"minRequiredPasswordLength", "7"},
-                            {"passwordStrengthRegularExpression", ""},
-                            {"enablePasswordReset", "true"},
-                            {"requiresQuestionAndAnswer", "true"},
-                            {"inMemory", "true"},
+                             {"applicationName", "/"},
+                             {"maxInvalidPasswordAttempts", "5"},
+                             {"minRequiredNonAlphaNumericCharacters", "1"},
+                             {"minRequiredPasswordLength", "7"},
+                             {"passwordAttemptWindow", "10"},
+                             {"passwordStrengthRegularExpression", ""},
+                             {"enablePasswordReset", "true"},
+                             {"requiresQuestionAndAnswer", "true"},
+                             {"inMemory", "true"},
                          };
         }
 
@@ -60,7 +58,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             return this;
         }
 
-        public ConfigBuilder WithMinNonAlfanumericCharacters(int minimumNumber)
+        public ConfigBuilder WithMinNonAlphanumericCharacters(int minimumNumber)
         {
             config.Replace("minRequiredNonAlphaNumericCharacters", minimumNumber.ToString());
             return this;
@@ -96,54 +94,38 @@ namespace RavenDBMembership.Tests.TestHelpers
             config.Replace("inmemory", true.ToString());
             return this;
         }
+
+        public ConfigBuilder WithMaxInvalidPasswordAttempts(int maxAttempts)
+        {
+            config.Replace("maxInvalidPasswordAttempts", maxAttempts.ToString());
+            return this;
+        }
+
+        public ConfigBuilder WithApplicationName(string applicationName)
+        {
+            config.Replace("applicationName", applicationName);
+            return this;
+        }
+
+        public ConfigBuilder WithPasswordAttemptWindow(int minutes)
+        {
+            config.Replace("passwordAttemptWindow", minutes.ToString());
+            return this;
+        }
     }
 
-    #region tests
-
-    [TestFixture]
-    public class ConfigBuilderTests
+    static class ConfigurationExtensions
     {
-        [Test]
-        public void Build_ReturnsInstanceOfConfig()
+        /// <summary>
+        /// Replaces existing key-value pair in the collection with the new value for the same key
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void Replace(this NameValueCollection collection, String key, String value)
         {
-            var sut = new ConfigBuilder().Build();
-            Assert.IsNotNull(sut);
-            Assert.IsInstanceOf<NameValueCollection>(sut);
+            collection.Remove(key);
+            collection.Add(key, value);
         }
-
-        [Test]
-        public void WithValue_NonExistingValue_AddsThisValue()
-        {
-            var sut = new ConfigBuilder().WithValue("Hello", "World").Build();
-
-            Assert.IsTrue(sut["Hello"] ==  "World");
-        }
-
-        [Test]
-        public void WithoutValue_WithExistingValue_RemovesValue()
-        {
-            var sut = new ConfigBuilder().WithoutValue("applicationName").Build();
-            Assert.IsNull(sut["applicationName"]);
-        }
-
-        [Test]
-        public void Build_CalledTwice_ReturnsSameInstance()
-        {
-            var sut = new ConfigBuilder();
-            var result = sut.Build();
-            var result1 = sut.Build();
-            Assert.AreSame(result, result1);
-        }
-
-        [Test]
-        public void Build_TwoInstances_ReturnTwoConfigInstances()
-        {
-            var result1 = new ConfigBuilder().Build();
-            var result = new ConfigBuilder().Build();
-
-            Assert.AreNotSame(result, result1);
-        }
-
-    #endregion
     }
 }

@@ -23,7 +23,7 @@ namespace RavenDBMembership.Tests
         {
             var user = new User()
             {
-                LastActivityDate = DateTime.Now.AddMinutes(-10)
+                LastActivityDate = DateTime.Now.AddMinutes(-5)
             };
             Assert.IsTrue(user.IsOnline);
         }

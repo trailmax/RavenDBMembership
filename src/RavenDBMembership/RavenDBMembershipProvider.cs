@@ -6,16 +6,11 @@ using System.Web.Security;
 using Raven.Client;
 using System.Collections.Specialized;
 using System.Configuration.Provider;
-using System.Diagnostics;
 
-
-namespace RavenDBMembership.Provider
+namespace RavenDBMembership
 {
     public class RavenDBMembershipProvider : MembershipProvider
     {
-
-        #region Private Members
-
         private string providerName = "RavenDBMembership";
         private int maxInvalidPasswordAttempts;
         private int passwordAttemptWindow;
@@ -25,9 +20,13 @@ namespace RavenDBMembership.Provider
         private bool enablePasswordReset;
         private bool requiresQuestionAndAnswer;
 
-        #endregion
 
         #region Overriden Public Members
+
+        public override string Name
+        {
+            get { return providerName; }
+        }
 
         public override string ApplicationName { get; set; }
 
@@ -143,7 +142,7 @@ namespace RavenDBMembership.Provider
             // raise external events
             var args = new ValidatePasswordEventArgs(username, password, true);
             OnValidatingPassword(args);
-            if (args.Cancel || !PasswordIsValid(password)) // validate password internally
+            if (args.Cancel || !NewPasswordIsCompliant(password)) // validate password internally
             {
                 status = MembershipCreateStatus.InvalidPassword;
                 return null;
@@ -160,12 +159,12 @@ namespace RavenDBMembership.Provider
             var user = new User();
             user.Username = username.ToLower();
             user.PasswordSalt = PasswordUtil.CreateRandomSalt();
-            user.PasswordHash = EncodePassword(password, user.PasswordSalt);
+            user.PasswordHash = PasswordUtil.HashPassword(password, user.PasswordSalt);
             user.Email = email.ToLower();
             user.ApplicationName = ApplicationName.ToLower();
             user.CreationDate = DateTime.Now;
             user.PasswordQuestion = passwordQuestion.ToLower();
-            user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : EncodePassword(passwordAnswer.ToLower(), user.PasswordSalt);
+            user.PasswordAnswer = string.IsNullOrEmpty(passwordAnswer) ? String.Empty : PasswordUtil.HashPassword(passwordAnswer.ToLower(), user.PasswordSalt);
             user.IsApproved = isApproved;
             user.IsLockedOut = false;
             user.LastActivityDate = DateTime.Now;
@@ -191,7 +190,7 @@ namespace RavenDBMembership.Provider
         }
 
 
-        private bool PasswordIsValid(String password)
+        private bool NewPasswordIsCompliant(String password)
         {
             if (password.Length < MinRequiredPasswordLength)
             {
@@ -235,7 +234,7 @@ namespace RavenDBMembership.Provider
         {
             ValidatePasswordEventArgs args = new ValidatePasswordEventArgs(username, newPassword, false);
             OnValidatingPassword(args);
-            if (args.Cancel || !PasswordIsValid(newPassword))
+            if (args.Cancel || !NewPasswordIsCompliant(newPassword))
             {
                 throw new MembershipPasswordException("The new password is not valid.");
             }
@@ -251,7 +250,7 @@ namespace RavenDBMembership.Provider
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
 
-                user.PasswordHash = EncodePassword(newPassword, user.PasswordSalt);
+                user.PasswordHash = PasswordUtil.HashPassword(newPassword, user.PasswordSalt);
                 session.SaveChanges();
             }
             return true;
@@ -285,7 +284,7 @@ namespace RavenDBMembership.Provider
                              select u).SingleOrDefault();
 
                 user.PasswordQuestion = newPasswordQuestion;
-                user.PasswordAnswer = EncodePassword(newPasswordAnswer.ToLower(), user.PasswordSalt);
+                user.PasswordAnswer = PasswordUtil.HashPassword(newPasswordAnswer.ToLower(), user.PasswordSalt);
                 session.SaveChanges();
             }
             return true;
@@ -434,14 +433,14 @@ namespace RavenDBMembership.Provider
                     throw new ProviderException("User has not been approved by administrators. Can not reset password.");
                 }
 
-                if (RequiresQuestionAndAnswer && user.PasswordAnswer != EncodePassword(answer.ToLower(), user.PasswordSalt))
+                if (RequiresQuestionAndAnswer && user.PasswordAnswer != PasswordUtil.HashPassword(answer.ToLower(), user.PasswordSalt))
                 {
                     user.FailedPasswordAttempts++;
                     session.SaveChanges();
                     throw new MembershipPasswordException("The answer to the security question is incorrect.");
                 }
                 var newPassword = Membership.GeneratePassword(8, 2);
-                user.PasswordHash = EncodePassword(newPassword, user.PasswordSalt);
+                user.PasswordHash = PasswordUtil.HashPassword(newPassword, user.PasswordSalt);
                 session.SaveChanges();
                 return newPassword;
             }
@@ -528,36 +527,30 @@ namespace RavenDBMembership.Provider
                     return false;
                 }
 
-                if (user.PasswordHash == EncodePassword(password, user.PasswordSalt))
+                if (user.PasswordHash == PasswordUtil.HashPassword(password, user.PasswordSalt))
                 {
                     user.LastLoginDate = DateTime.Now;
                     user.LastActivityDate = DateTime.Now;
                     user.FailedPasswordAttempts = 0;
-                    user.FailedPasswordAnswerAttempts = 0;
                     session.SaveChanges();
                     return true;
                 }
-                else
-                {
-                    user.LastFailedPasswordAttempt = DateTime.Now;
-                    user.FailedPasswordAttempts++;
-                    user.IsLockedOut = IsLockedOutValidationHelper(user);
-                    session.SaveChanges();
-                }
+                user.FailedPasswordAttempts++;
+                user.LastFailedPasswordAttempt = DateTime.Now;
+                user.IsLockedOut = IsLockedOutValidationHelper(user);
+                session.SaveChanges();
+                return false;
             }
-            return false;
         }
-
-        #region Private Helper Functions
 
 
         private bool IsLockedOutValidationHelper(User user)
         {
-            long minutesSinceLastAttempt = DateTime.Now.Ticks - user.LastFailedPasswordAttempt.Ticks;
+            long minutesSinceLastAttempt = (DateTime.Now - user.LastFailedPasswordAttempt).Minutes;
             if (user.FailedPasswordAttempts >= MaxInvalidPasswordAttempts
-                && minutesSinceLastAttempt < (long) this.PasswordAttemptWindow)
+	            && minutesSinceLastAttempt < this.PasswordAttemptWindow)
             {
-                return true;
+	            return true;
             }
             return false;
         }
@@ -597,20 +590,5 @@ namespace RavenDBMembership.Provider
             return new MembershipUser(this.providerName, user.Username, user.Id, user.Email, user.PasswordQuestion, user.Comment, user.IsApproved, user.IsLockedOut
                 , user.CreationDate, user.LastLoginDate.HasValue ? user.LastLoginDate.Value : new DateTime(1900, 1, 1), user.LastActivityDate, new DateTime(1900, 1, 1), new DateTime(1900, 1, 1));
         }
-
-
-        private string EncodePassword(string password, string salt)
-        {
-            if (string.IsNullOrEmpty(salt))
-            {
-                throw new ProviderException("A random salt is required with hashed passwords.");
-            }
-
-            var encodedPassword = PasswordUtil.HashPassword(password, salt);
-
-            return encodedPassword;
-        }
-
-        #endregion
     }
 }

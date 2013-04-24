@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Configuration;
-using System.Configuration.Provider;
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
@@ -22,8 +21,6 @@ namespace RavenDBMembership
         /// <returns></returns>
         public static IDocumentStore InitialiseDocumentStore(NameValueCollection configCollection)
         {
-            IDocumentStore documentStore;
-
             var config = new Configuration(configCollection);
 
             // Connection String Name

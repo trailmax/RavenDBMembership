@@ -5,8 +5,7 @@ using System.Collections.Specialized;
 using Raven.Client;
 using Raven.Client.Linq;
 
-
-namespace RavenDBMembership.Provider
+namespace RavenDBMembership
 {
 	public class RavenDBRoleProvider : RoleProvider
 	{

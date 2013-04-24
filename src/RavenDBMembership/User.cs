@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace RavenDBMembership
 {
+    //TODO inherit from MembershipUser
 	public class User
 	{
 		public string Id { get; set; }
@@ -21,23 +22,23 @@ namespace RavenDBMembership
 		public bool IsLockedOut { get; set; }		
 
         /// <summary>
-        /// Returns true if user was seen online within last 20 minutes.
+        /// Returns true if user was seen online within last 10 minutes.
         /// </summary>
         public bool IsOnline {
             get { 
-                return (LastActivityDate.AddMinutes(20) > DateTime.Now);
+                return (LastActivityDate.AddMinutes(10) > DateTime.Now);
             } 
         }
 
 	    public DateTime LastActivityDate { get; set; }
 
         public int FailedPasswordAttempts { get; set; }
-        public int FailedPasswordAnswerAttempts { get; set; }
-        public DateTime LastFailedPasswordAttempt { get; set; }
 		public string Comment { get; set; }
         public bool IsApproved { get; set; }
 
-		public User()
+	    public DateTime LastFailedPasswordAttempt { get; set; }
+
+	    public User()
 		{
 			Roles = new List<string>();
 			Id = "authorization/users/"; // db assigns id
