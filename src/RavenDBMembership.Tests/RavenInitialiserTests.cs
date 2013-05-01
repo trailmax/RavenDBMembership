@@ -2,12 +2,13 @@
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
+using RavenDBMembership.Config;
 
 
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
-    public class RavenDBMembershipProviderInitialiserTests
+    public class RavenInitialiserTests
     {
         private IDocumentStore sut;
 
@@ -25,7 +26,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void Initialise_ConnectionStringName_PicksUpUrl()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithConnectionStringName("Server") // this should give url=http://localhost:8080
                 .Build();
 
@@ -39,7 +40,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void Initialise_ConnectionStringName_PicksUpEmbeddedStore()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithConnectionStringName("Local") // this should give DataDir = file://c:/ravendb
                 .Build();
 
@@ -53,7 +54,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void Initialise_ConnectionString_PicksUpUrl()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithConnectionUrl("http://localhost:8080")
                 .Build();
 
@@ -68,7 +69,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void Initialise_EmbeddedMode_ConnectsFine()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithEmbeddedStorage(@".\Data")
                 .Build();
 
@@ -81,7 +82,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void Initialise_InMemoryMode_CreatesInMemoryMode()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .InMemoryStorageMode()
                 .Build();
 

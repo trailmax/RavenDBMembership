@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Web.Security;
 using NUnit.Framework;
+using RavenDBMembership.Config;
 
 namespace RavenDBMembership.Tests
 {
     [TestFixture]
-    class ProviderConfigurationTests
+    class RavenDBMembershipProviderInitializeTests
     {
         private const string ProviderName = "RavenTest";
 
@@ -31,7 +32,7 @@ namespace RavenDBMembership.Tests
         [TestCase(false, Result = false)]
         public bool Initialise_EnabledPasswordReset_ConfiguredCorrectly(Boolean value)
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(value)
                 .Build();
 
@@ -46,7 +47,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void Initialise_GivenApplicationName_ConfiguresCorrectly()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithApplicationName("Some random name")
                 .Build();
 
@@ -79,7 +80,7 @@ namespace RavenDBMembership.Tests
         [TestCase(55, Result = 55)]
         public int Initialise_GivenMaxInvalidPasswordAttempts_ConfiguresCorrectly(int value)
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithMaxInvalidPasswordAttempts(value)
                 .Build();
 
@@ -96,7 +97,7 @@ namespace RavenDBMembership.Tests
         [TestCase("64", Result = 64)]
         public int Initialise_WithMinAlphanumericChar_ConfiguresCorrectly(string value)
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithValue("minRequiredNonAlphaNumericCharacters", value).Build();
             sut.Initialize(ProviderName, config);
 
@@ -108,7 +109,7 @@ namespace RavenDBMembership.Tests
         [TestCase("32", Result = 32)]
         public int Initialise_WithMinPasswordLength_ConfiguresCorrectly(string value)
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithValue("minRequiredPasswordLength", value).Build();
             sut.Initialize(ProviderName, config);
 
@@ -120,7 +121,7 @@ namespace RavenDBMembership.Tests
         [TestCase("", Result = false)]
         public bool Initialise_WithRequiredQA_ConfiguresCorrectly(string value)
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithValue("requiresQuestionAndAnswer", value).Build();
 
             sut.Initialize(ProviderName, config);
@@ -147,7 +148,7 @@ namespace RavenDBMembership.Tests
         public void Initialise_PasswordWindowAttempt_ConfiguresCorrectly()
         {
             //Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithPasswordAttemptWindow(42).Build();
 
             // Act

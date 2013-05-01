@@ -4,6 +4,7 @@ using System.Configuration;
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
+using RavenDBMembership.Config;
 
 namespace RavenDBMembership
 {
@@ -21,7 +22,7 @@ namespace RavenDBMembership
         /// <returns></returns>
         public static IDocumentStore InitialiseDocumentStore(NameValueCollection configCollection)
         {
-            var config = new ConfigReader(configCollection);
+            var config = new MembershipConfigReader(configCollection);
 
             // Connection String Name
             var connectionStringName = config.ConnectionStringName();
@@ -65,16 +66,16 @@ namespace RavenDBMembership
         }
 
 
-        private static IDocumentStore DocumentStoreEmbedded(ConfigReader config)
+        private static IDocumentStore DocumentStoreEmbedded(MembershipConfigReader membershipConfig)
         {
-            if (String.IsNullOrEmpty(config.EmbeddedDataDirectory()))
+            if (String.IsNullOrEmpty(membershipConfig.EmbeddedDataDirectory()))
             {
                 throw new ConfigurationErrorsException(
                     "For Embedded Mode please provide DataDir parameter with address where to store files. I.e. DataDir=~/Data ");
             }
             var documentStore = new EmbeddableDocumentStore()
                                 {
-                                    DataDirectory = config.EmbeddedDataDirectory(),
+                                    DataDirectory = membershipConfig.EmbeddedDataDirectory(),
                                 };
             documentStore.Initialize();
             return documentStore;

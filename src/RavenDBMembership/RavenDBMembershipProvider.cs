@@ -6,12 +6,13 @@ using System.Web.Security;
 using Raven.Client;
 using System.Collections.Specialized;
 using System.Configuration.Provider;
+using RavenDBMembership.Config;
 
 namespace RavenDBMembership
 {
     public class RavenDBMembershipProvider : MembershipProvider
     {
-        private string providerName = "RavenDBMembership";
+        private string providerName;
         private int maxInvalidPasswordAttempts;
         private int passwordAttemptWindow;
         private int minRequiredNonAlphanumericCharacters;
@@ -94,7 +95,7 @@ namespace RavenDBMembership
 
             this.providerName = string.IsNullOrEmpty(providedProviderName) ? "RavenDBMembership" : providedProviderName;
 
-            var config = new ConfigReader(configCollection);
+            var config = new MembershipConfigReader(configCollection);
 
             if (string.IsNullOrEmpty(config.Description()))
             {

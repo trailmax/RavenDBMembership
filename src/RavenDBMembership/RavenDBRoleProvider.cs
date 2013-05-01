@@ -9,53 +9,38 @@ namespace RavenDBMembership
 {
 	public class RavenDBRoleProvider : RoleProvider
 	{
-		private const string ProviderName = "RavenDBRole";
-		private static IDocumentStore documentStore;
+        public override string ApplicationName { get; set; }
 
-        
-		public static IDocumentStore DocumentStore
-		{
-			get
-			{
-				if (documentStore == null)
-				{
-					throw new NullReferenceException("The DocumentStore is not set. Please set the DocumentStore or make sure that the Common Service Locator can find the IDocumentStore and call Initialize on this provider.");
-				}
-				return documentStore;
-			}
-			set { documentStore = value; }
-		}        
+		private string providerName;
+        public IDocumentStore DocumentStore { get; set; }
 
 
-		public override void Initialize(string name, NameValueCollection config)
+		public override void Initialize(string providedProviderName, NameValueCollection config)
 		{
 		    if (config == null)
 		    {
-		        throw new ArgumentNullException("There are no membership configuration settings.");
+		        throw new ArgumentNullException("config");
 		    }
 
-            if (string.IsNullOrEmpty(name))
-            {
-                name = "RavenDBMembershipProvider";
-            }
+		    this.providerName = String.IsNullOrEmpty(providedProviderName) ? "RavenDBRole" : providedProviderName;
+
 
             if (string.IsNullOrEmpty(config["description"]))
             {
-                config["description"] = "An Asp.Net membership provider for the RavenDB document database.";
+                config["description"] = "An Asp.Net role provider for the RavenDB document database.";
             }
 
-            if (documentStore == null)
+            if (DocumentStore == null)
             {
-                documentStore = RavenInitialiser.InitialiseDocumentStore(config);
+                DocumentStore = RavenInitialiser.InitialiseDocumentStore(config);
             }
 
             ApplicationName = string.IsNullOrEmpty(config["applicationName"]) ? System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath : config["applicationName"];
 
-            base.Initialize(name, config);
+            base.Initialize(providerName, config);
 		}
 
 
-		public override string ApplicationName { get; set; }
 
 		public override void AddUsersToRoles(string[] usernames, string[] roleNames)
 		{

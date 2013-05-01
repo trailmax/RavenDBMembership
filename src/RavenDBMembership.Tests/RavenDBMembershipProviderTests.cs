@@ -3,6 +3,7 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Web.Security;
+using RavenDBMembership.Config;
 using RavenDBMembership.Tests.TestHelpers;
 
 
@@ -42,7 +43,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_WithDuplicateEmail_ReturnsDuplicateEmailStatus()
         {
             //Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().Build();
@@ -63,7 +64,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_WithDuplicateUsername_ReturnsDuplicateUsernameStatus()
         {
             //Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().Build();
@@ -83,7 +84,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void CreateUser_PasswordResetEnabledNoAnswer_ThrowsException()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true).Build();
             sut.Initialize(ProviderName, config);
@@ -101,7 +102,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_ShortPassword_ReturnsNullAndInvalidPasswordStatus()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithMinimumPasswordLength(10).Build();
             sut.Initialize(ProviderName, config);
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
@@ -121,7 +122,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_PasswordNoSpecialChars_ReturnsNullAndInvalidPasswordStatus()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithMinNonAlphanumericCharacters(2).Build();
             sut.Initialize(ProviderName, config);
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
@@ -139,7 +140,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void CreateUser_PasswordRegexSimplePassword_ReturnsNullAndInvalidPasswordStatus()
         {
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithMinNonAlphanumericCharacters(0)
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
@@ -160,7 +161,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void CreateUser_CorrectInput_ShouldCreateUserRecord()
         {
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             // act
@@ -177,7 +178,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_PasswordInvalidLength_ThrowsMembershipPasswordException()
         {
             // Arrange
-            var confg = new ConfigBuilder()
+            var confg = new MembershipConfigBuilder()
                 .WithMinimumPasswordLength(10)
                 .Build();
             sut.Initialize(ProviderName, confg);
@@ -195,7 +196,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_MinNumberOfAlphanumberic_ThrowsException()
         {
             // Arrange
-            var confg = new ConfigBuilder()
+            var confg = new MembershipConfigBuilder()
                 .WithMinNonAlphanumericCharacters(10)
                 .Build();
             sut.Initialize(ProviderName, confg);
@@ -212,7 +213,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_RegularExpressionStrength_ThrowsException()
         {
             // Arrange
-            var confg = new ConfigBuilder()
+            var confg = new MembershipConfigBuilder()
                 .WithMinNonAlphanumericCharacters(0)
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
@@ -231,7 +232,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_IncorrectPassword_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
@@ -245,7 +246,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_UserIsLockedOut_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -263,7 +264,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_UserNotApproved_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -280,7 +281,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_IncorrectUsername_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
@@ -294,7 +295,7 @@ namespace RavenDBMembership.Tests
         public void ChangePassword_OkPassword_ShouldChangePassword()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
@@ -318,7 +319,7 @@ namespace RavenDBMembership.Tests
         public void ChangePasswordQuestionAndAnswer_PasswordNotCorrect_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
@@ -332,7 +333,7 @@ namespace RavenDBMembership.Tests
         public void ChangePasswordQuestionAndAnswer_UserIsLocked_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -349,7 +350,7 @@ namespace RavenDBMembership.Tests
         public void ChangePasswordQuestionAndAnswer_UserNotApproved_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -366,7 +367,7 @@ namespace RavenDBMembership.Tests
         public void ChangePasswordQuestionAndAnswer_PasswordOk_ChangesQuestionAnswer()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
@@ -392,7 +393,7 @@ namespace RavenDBMembership.Tests
         public void DeleteUser_WrongUsername_ThrowsException()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
@@ -406,7 +407,7 @@ namespace RavenDBMembership.Tests
         public void DeleteUser_CorrectUsername_DeletesUser()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
@@ -427,7 +428,7 @@ namespace RavenDBMembership.Tests
         public void FindUserByEmail_GivenPartialMatch_ReturnsCorrectUsers()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             const string matchedEmailPart = "job";
@@ -457,7 +458,7 @@ namespace RavenDBMembership.Tests
         public void FindUserByEmail_GivenLoadsOfMatches_CorrectPaging()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 20);
@@ -474,7 +475,7 @@ namespace RavenDBMembership.Tests
         public void FindUserByName_GivenPartialMatch_ReturnsCorrectUsers()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user1 = new UserBuilder()
@@ -506,7 +507,7 @@ namespace RavenDBMembership.Tests
         public void FindUserByName_GivenLoadsOfMatches_CorrectPaging()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 20);
@@ -524,7 +525,7 @@ namespace RavenDBMembership.Tests
         public void GetAllUsers_ShouldReturnAllUsers()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
@@ -542,7 +543,7 @@ namespace RavenDBMembership.Tests
         public void GetAllUsers_SmalPageSize_PagingAmountIsObserved()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
@@ -561,7 +562,7 @@ namespace RavenDBMembership.Tests
         public void GetNumberOfUsersOnline_OnlineUsersExist_AllOnlineReturned()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             const int numberOfOnlineUsers = 10;
@@ -579,7 +580,7 @@ namespace RavenDBMembership.Tests
         public void GetNumberOfUsersOnline_SomeOffline_OnlyOnlinecounted()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             const int numberOfOnlineUsers = 10;
@@ -612,7 +613,7 @@ namespace RavenDBMembership.Tests
         public void GetUserByUsername_CorrectUsername_UsernamesMatch()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
@@ -630,7 +631,7 @@ namespace RavenDBMembership.Tests
         public void GetUserByUsername_WrongUsername_ReturnsNull()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
@@ -647,7 +648,7 @@ namespace RavenDBMembership.Tests
         public void GetUserByUsername_AskedToUpdateTimestamp_UpdatesTimestamp()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -668,7 +669,7 @@ namespace RavenDBMembership.Tests
         public void GetUserByProviderUserKey_CorrectKey_UserReturned()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var key = Guid.NewGuid().ToString();
@@ -688,7 +689,7 @@ namespace RavenDBMembership.Tests
         public void GetUserByProviderUserKey_IncorrectKey_NullReturned()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -707,7 +708,7 @@ namespace RavenDBMembership.Tests
         public void GetUserByProviderUserKey_AskedToUpdateTimestamp_UpdatesTimestamp()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var key = Guid.NewGuid().ToString();
@@ -732,7 +733,7 @@ namespace RavenDBMembership.Tests
         public void GetUserNameByEmail_CorrectEmail_ReturnsUsername()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
 
@@ -751,7 +752,7 @@ namespace RavenDBMembership.Tests
         public void GetUserNameByEmail_IncorrectEmail_ReturnsNull()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
 
@@ -771,7 +772,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_PasswordResetDisabled_ThrowsException()
         {
             //Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(false)
                 .Build();
 
@@ -786,7 +787,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_WrongUsername_ThrowsException()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true).Build();
 
             sut.Initialize(ProviderName, config);
@@ -805,7 +806,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_UserIsLockedout_ThrowsException()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true).Build();
 
             sut.Initialize(ProviderName, config);
@@ -826,7 +827,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_UserNotApproved_ThrowsException()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true).Build();
 
             sut.Initialize(ProviderName, config);
@@ -848,7 +849,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_IncorrectAnswer_ThrowsException()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true)
                 .Build();
@@ -872,7 +873,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_IncorrectAnswer_IncreaseFailedAttemptsCount()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true)
                 .Build();
@@ -910,7 +911,7 @@ namespace RavenDBMembership.Tests
         public void ResetPassword_AllCorrect_ChangesPassword()
         {
             //Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true)
                 .Build();
@@ -943,7 +944,7 @@ namespace RavenDBMembership.Tests
         public void UnlockUser_WrongUsername_ReturnsFalse()
         {
             //Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -964,7 +965,7 @@ namespace RavenDBMembership.Tests
         public void UnlockUser_AllCorrect_ReturnsTrue()
         {
             //Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -985,7 +986,7 @@ namespace RavenDBMembership.Tests
         public void UnlockUser_AllCorrect_UpdatesUserInStorage()
         {
             //Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -1012,7 +1013,7 @@ namespace RavenDBMembership.Tests
         public void UpdateUser_TryUpdateUsername_ThrowsException()
         {
             //Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -1034,7 +1035,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void UpdateUser_WrongUsername_ThrowsException()
         {
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -1056,7 +1057,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void UpdateUser_UserIsFound_UpdatesUserInStorage()
         {
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
@@ -1098,7 +1099,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_NoUser_ReturnsFalse()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().Build();
@@ -1116,7 +1117,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_userIsLocked_ReturnsFalse()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -1137,7 +1138,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_UserNotApproved_ReturnsFalse()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -1158,7 +1159,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_AllCorrect_ReturnsTrue()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -1177,7 +1178,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_AllCorrect_ResetsUserCounters()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -1201,7 +1202,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_IncorrectPassword_IncreasesCounter()
         {
             // Arrange
-            sut.Initialize(ProviderName, new ConfigBuilder().Build());
+            sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
             AbstractTestBase.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
@@ -1225,7 +1226,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_IncorrectPasswordTwoTimes_LocksUser()
         {
             // Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithMaxInvalidPasswordAttempts(2)
                 .Build();
             sut.Initialize(ProviderName, config);
@@ -1253,7 +1254,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_OutsidePasswordAttemptWindow_DoesNotIncreaseCounter()
         {
             //Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithPasswordAttemptWindow(5)
                 .WithMaxInvalidPasswordAttempts(2)
                 .Build();
@@ -1286,7 +1287,7 @@ namespace RavenDBMembership.Tests
         public void ValidateUser_InsidePasswordAttemptWindow_LocksUser()
         {
             //Arrange
-            var config = new ConfigBuilder()
+            var config = new MembershipConfigBuilder()
                 .WithPasswordAttemptWindow(10)
                 .WithMaxInvalidPasswordAttempts(2)
                 .Build();
