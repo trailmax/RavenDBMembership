@@ -21,7 +21,7 @@ namespace RavenDBMembership
         /// <returns></returns>
         public static IDocumentStore InitialiseDocumentStore(NameValueCollection configCollection)
         {
-            var config = new Configuration(configCollection);
+            var config = new ConfigReader(configCollection);
 
             // Connection String Name
             var connectionStringName = config.ConnectionStringName();
@@ -65,7 +65,7 @@ namespace RavenDBMembership
         }
 
 
-        private static IDocumentStore DocumentStoreEmbedded(Configuration config)
+        private static IDocumentStore DocumentStoreEmbedded(ConfigReader config)
         {
             if (String.IsNullOrEmpty(config.EmbeddedDataDirectory()))
             {

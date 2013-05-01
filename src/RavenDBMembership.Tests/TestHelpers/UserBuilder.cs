@@ -9,15 +9,12 @@ namespace RavenDBMembership.Tests.TestHelpers
 
         public UserBuilder()
         {
-            var salt = PasswordUtil.CreateRandomSalt();
             user = new User()
             {
                 Username = "John",
-                PasswordSalt = salt,
-                PasswordHash = PasswordUtil.HashPassword("1234ABCD", salt),
+                PasswordSalt = PasswordUtil.CreateRandomSalt(),
                 Email = "John@world.net",
                 PasswordQuestion = "A QUESTION",
-                PasswordAnswer = PasswordUtil.HashPassword("AN ANSWER", salt),
                 LastActivityDate = DateTime.Now,
                 IsApproved = true,
                 Comment = "A FAKE USER",
@@ -89,6 +86,12 @@ namespace RavenDBMembership.Tests.TestHelpers
         public UserBuilder WithFailedPasswordAttempts(int count)
         {
             user.FailedPasswordAttempts = count;
+            return this;
+        }
+
+        public UserBuilder WithLastFailedAttempt(DateTime dateTime)
+        {
+            user.LastFailedPasswordAttempt = dateTime;
             return this;
         }
     }

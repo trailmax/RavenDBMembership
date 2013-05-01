@@ -94,7 +94,7 @@ namespace RavenDBMembership
 
             this.providerName = string.IsNullOrEmpty(providedProviderName) ? "RavenDBMembership" : providedProviderName;
 
-            var config = new Configuration(configCollection);
+            var config = new ConfigReader(configCollection);
 
             if (string.IsNullOrEmpty(config.Description()))
             {
@@ -536,8 +536,8 @@ namespace RavenDBMembership
                     return true;
                 }
                 user.FailedPasswordAttempts++;
-                user.LastFailedPasswordAttempt = DateTime.Now;
                 user.IsLockedOut = IsLockedOutValidationHelper(user);
+                user.LastFailedPasswordAttempt = DateTime.Now;
                 session.SaveChanges();
                 return false;
             }

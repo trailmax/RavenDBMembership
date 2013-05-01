@@ -1248,5 +1248,70 @@ namespace RavenDBMembership.Tests
                 Assert.True(user.IsLockedOut);
             }
         }
+
+        [Test]
+        public void ValidateUser_OutsidePasswordAttemptWindow_DoesNotIncreaseCounter()
+        {
+            //Arrange
+            var config = new ConfigBuilder()
+                .WithPasswordAttemptWindow(5)
+                .WithMaxInvalidPasswordAttempts(2)
+                .Build();
+
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithUsername(Username)
+                .WithLastFailedAttempt(DateTime.Now.AddMinutes(-10))
+                .WithFailedPasswordAttempts(1)
+                .Build();
+
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            sut.ValidateUser(existingUser.Username, "wrongPassword");
+
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                Assert.False(user.IsLockedOut);
+            }
+        }
+
+
+        [Test]
+        public void ValidateUser_InsidePasswordAttemptWindow_LocksUser()
+        {
+            //Arrange
+            var config = new ConfigBuilder()
+                .WithPasswordAttemptWindow(10)
+                .WithMaxInvalidPasswordAttempts(2)
+                .Build();
+
+            sut.Initialize(ProviderName, config);
+            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+
+            var existingUser = new UserBuilder()
+                .WithUsername(Username)
+                .WithLastFailedAttempt(DateTime.Now.AddMinutes(-5))
+                .WithFailedPasswordAttempts(1)
+                .Build();
+
+            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+
+            // Act
+            sut.ValidateUser(existingUser.Username, "wrongPassword");
+
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                Assert.True(user.IsLockedOut);
+            }
+        }
     }
 }

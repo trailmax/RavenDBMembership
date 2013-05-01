@@ -1,25 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace RavenDBMembership
 {
 	public class Role
 	{
-		private string _id;
+		private string id;
 
 		public string Id 
 		{
 			get
 			{
-				if (String.IsNullOrEmpty(this._id))
+				if (String.IsNullOrEmpty(this.id))
 				{
-					this._id = GenerateId();
+					this.id = GenerateId();
 				}
-				return this._id;
+				return this.id;
 			}
-			set { this._id = value; }
+			set { this.id = value; }
 		}
 
 		public string ApplicationName { get; set; }

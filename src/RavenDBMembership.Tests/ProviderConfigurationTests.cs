@@ -143,5 +143,18 @@ namespace RavenDBMembership.Tests
             Assert.Throws<ArgumentNullException>(() => sut.Initialize("", null));
         }
 
+        [Test]
+        public void Initialise_PasswordWindowAttempt_ConfiguresCorrectly()
+        {
+            //Arrange
+            var config = new ConfigBuilder()
+                .WithPasswordAttemptWindow(42).Build();
+
+            // Act
+            sut.Initialize(ProviderName, config);
+
+            // Assert
+            Assert.AreEqual(42, sut.PasswordAttemptWindow);
+        }
     }
 }
