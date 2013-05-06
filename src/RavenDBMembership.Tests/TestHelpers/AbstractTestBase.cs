@@ -116,7 +116,10 @@ namespace RavenDBMembership.Tests.TestHelpers
             var roles = new List<Role>(numberOfRoles);
             for (int i = 0; i < numberOfRoles; i++)
             {
-                var role = new Role(Util.RandomString(10), null);
+                var role = new Role(Util.RandomString(10), null)
+                               {
+                                   ApplicationName = "/"
+                               };
                 roles.Add(role);
             }
             return roles;

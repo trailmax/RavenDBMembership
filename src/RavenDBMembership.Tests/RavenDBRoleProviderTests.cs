@@ -93,12 +93,13 @@ namespace RavenDBMembership.Tests
             //Arrange
             sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
 
-            var roles = AbstractTestBase.CreateRolesInDocumentStore(sut.DocumentStore, 3);
             var users = AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 3);
+            var roles = AbstractTestBase.CreateRolesInDocumentStore(sut.DocumentStore, 3);
 
             // Act
             var usernames = users.Select(u => u.Username).ToArray();
             var roleNames = roles.Select(u => u.Name).ToArray();
+            var roleIds = roles.Select(u => u.Id.ToLowerInvariant()).ToList();
             sut.AddUsersToRoles(usernames, roleNames);
 
             // Assert -- all users should be added to all the roles
@@ -108,52 +109,13 @@ namespace RavenDBMembership.Tests
                 foreach (var dbUser in dbUsers)
                 {
                     Assert.IsNotEmpty(dbUser.Roles);
-                    foreach (var role in dbUser.Roles)
+                    foreach (var dbRole in dbUser.Roles)
                     {
-                        Assert.Contains(role, roles);
+                        Assert.Contains(dbRole.ToLowerInvariant(), roleIds);
                     }
                 }
             }
         }
-
-        //[Test]
-        //public void AddUsersToRoles()
-        //{
-        //    var roles = testRoles;
-        //    for (int i = 0; i < roles.Length; i++)
-        //    {
-        //        roles[i].ApplicationName = AppName;
-        //    }
-        //    var user = new User();
-        //    user.Username = TestUserName;
-        //    user.ApplicationName = AppName;
-
-        //    using (var store = InMemoryStore())
-        //    {
-        //        store.Initialize();
-        //        using (var session = store.OpenSession())
-        //        {
-        //            foreach (var role in roles)
-        //            {
-        //                session.Store(role);
-        //            }
-        //            session.Store(user);
-        //            session.SaveChanges();
-        //        }
-
-        //        var provider = new RavenDBRoleProvider();
-        //        provider.DocumentStore = store;
-        //        provider.ApplicationName = AppName;
-        //        provider.AddUsersToRoles(new[] { user.Username }, new[] { "Role 1", "Role 2" });
-
-        //        using (var session = store.OpenSession())
-        //        {
-        //            var u = session.Query<User>().Where(x => x.Username == user.Username && x.ApplicationName == user.ApplicationName).FirstOrDefault();
-        //            Assert.True(u.Roles.Any(x => x.ToLower().Contains("role 1")));
-        //            Assert.False(u.Roles.Any(x => x.ToLower().Contains("role 3")));
-        //        }
-        //    }
-        //}
 
 
         /////////////////////////////////////////////////////////////////////////////////
