@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace RavenDBMembership.Tests.TestHelpers
@@ -23,7 +24,8 @@ namespace RavenDBMembership.Tests.TestHelpers
                 LastLoginDate = DateTime.Now,
                 FailedPasswordAttempts = 0,
                 FullName = "John Jackson",
-                IsLockedOut = false
+                IsLockedOut = false,
+                Roles = new List<string>(),
             };
         }
 
@@ -31,6 +33,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         {
             return user;
         }
+
 
         public UserBuilder WithUsername(String username)
         {

@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Configuration;
+using NUnit.Framework;
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
@@ -80,6 +81,18 @@ namespace RavenDBMembership.Tests
         }
 
         [Test]
+        public void Initialise_EmbeddedModeNoDataDir_ThrowsException()
+        {
+            //Arrange
+            var config = new MembershipConfigBuilder()
+                .WithEmbeddedStorage(@".\Data").Build();
+            config.Remove("dataDirectory");
+
+            // Act && Assert
+            Assert.Throws<ConfigurationErrorsException>(() => RavenInitialiser.InitialiseDocumentStore(config));
+        }
+
+        [Test]
         public void Initialise_InMemoryMode_CreatesInMemoryMode()
         {
             var config = new MembershipConfigBuilder()
@@ -89,6 +102,18 @@ namespace RavenDBMembership.Tests
             sut = RavenInitialiser.InitialiseDocumentStore(config);
 
             Assert.IsInstanceOf<EmbeddableDocumentStore>(sut);
+        }
+
+
+        [Test]
+        public void Initialise_NoStorageConfigured_ThrowException()
+        {
+            //Arrange
+            var config = new MembershipConfigBuilder().Build();
+            config.Remove("inmemory");
+
+            // Act && Assert
+            Assert.Throws<ConfigurationErrorsException>(() => RavenInitialiser.InitialiseDocumentStore(config));
         }
     }
 }

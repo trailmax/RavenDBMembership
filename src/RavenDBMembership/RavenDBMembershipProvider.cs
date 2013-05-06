@@ -95,7 +95,7 @@ namespace RavenDBMembership
 
             this.providerName = string.IsNullOrEmpty(providedProviderName) ? "RavenDBMembership" : providedProviderName;
 
-            var config = new MembershipConfigReader(configCollection);
+            var config = new ConfigReader(configCollection);
 
             if (string.IsNullOrEmpty(config.Description()))
             {

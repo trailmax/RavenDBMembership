@@ -13,63 +13,40 @@ namespace RavenDBMembership.Tests.TestHelpers
 {
     public abstract class AbstractTestBase
     {
-        protected RavenDBMembershipProvider Provider;
-
-        protected IDocumentStore InMemoryStore()
-        {
-            var documentStore = new EmbeddableDocumentStore
-            {
-                RunInMemory = true,
-                //UseEmbeddedHttpServer = true
-            };
-            documentStore.Initialize();
-            return documentStore;
-        }
+        //protected IDocumentStore InMemoryStore()
+        //{
+        //    var documentStore = new EmbeddableDocumentStore
+        //    {
+        //        RunInMemory = true,
+        //        //UseEmbeddedHttpServer = true
+        //    };
+        //    documentStore.Initialize();
+        //    return documentStore;
+        //}
 
         
-        protected IDocumentStore LocalHostStore()
-        {
-            var documentStore = new DocumentStore() { Url = "http://localhost:8080", DefaultDatabase = "TestDB" };
-            documentStore.Initialize();
-            return documentStore;
-        }
+        //protected IDocumentStore LocalHostStore()
+        //{
+        //    var documentStore = new DocumentStore() { Url = "http://localhost:8080", DefaultDatabase = "TestDB" };
+        //    documentStore.Initialize();
+        //    return documentStore;
+        //}
 
 
 
-        [SetUp]
-        public virtual void SetUp()
-        {
-            Provider = new RavenDBMembershipProvider();
-            Provider.DocumentStore = null;
-            Provider.DocumentStore = InMemoryStore();
-           
-            //RavenDBMembershipProvider.DocumentStore = LocalHostStore();
+        //public static User GetUserFromDocumentStore(IDocumentStore store, string username)
+        //{
+        //    using (var session = store.OpenSession())
+        //    {
+        //        return session.Query<User>().FirstOrDefault(x => x.Username == username);
+        //    }
+        //}
 
-        }
-
-
-
-        [TearDown]
-        public virtual void TearDown()
-        {
-            try
-            {
-                Provider.DocumentStore.Dispose();
-            }
-            catch
-            {
-                // ignore
-            }
-        }
-
-        public static User GetUserFromDocumentStore(IDocumentStore store, string username)
-        {
-            using (var session = store.OpenSession())
-            {
-                return session.Query<User>().FirstOrDefault(x => x.Username == username);
-            }
-        }
-
+        /// <summary>
+        /// Saves the user in the document store
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="user"></param>
         public static void AddUserToDocumentStore(IDocumentStore store, User user)
         {
             using (var session = store.OpenSession())
@@ -79,7 +56,13 @@ namespace RavenDBMembership.Tests.TestHelpers
             }
         }
 
-        public static void CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
+        /// <summary>
+        /// Creates a number of users in the document store
+        /// </summary>
+        /// <param name="store">Store where to save</param>
+        /// <param name="numberOfUsers">Number of users to create</param>
+        /// <returns></returns>
+        public static List<User> CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
         {
             var users = CreateDummyUsers(numberOfUsers);
             using (var session = store.OpenSession())
@@ -90,9 +73,10 @@ namespace RavenDBMembership.Tests.TestHelpers
                 }
                 session.SaveChanges();
             }
+            return users;
         }
 
-        protected static IEnumerable<User> CreateDummyUsers(int numberOfUsers)
+        private static List<User> CreateDummyUsers(int numberOfUsers)
         {
             var users = new List<User>(numberOfUsers);
             for (var i = 0; i < numberOfUsers; i++)
@@ -107,6 +91,43 @@ namespace RavenDBMembership.Tests.TestHelpers
         }
 
 
+        /// <summary>
+        /// Create number of roles in the document store.
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="numberofRoles"></param>
+        /// <returns></returns>
+        public static List<Role> CreateRolesInDocumentStore(IDocumentStore store, int numberofRoles)
+        {
+            var roles = CreateDummyRoles(numberofRoles);
+            using (var session = store.OpenSession())
+            {
+                foreach (var role in roles)
+                {
+                    session.Store(role);
+                }
+                session.SaveChanges();
+            }
+            return roles;
+        }
+
+        private static List<Role> CreateDummyRoles(int numberOfRoles)
+        {
+            var roles = new List<Role>(numberOfRoles);
+            for (int i = 0; i < numberOfRoles; i++)
+            {
+                var role = new Role(Util.RandomString(10), null);
+                roles.Add(role);
+            }
+            return roles;
+        }
+
+
+        /// <summary>
+        /// Does some magic with reflection to register the provider collection
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <param name="provider"></param>
         public static void InjectProvider(ProviderCollection collection, ProviderBase provider)
         {
             var fieldInfo = typeof (ProviderCollection).GetField("_ReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);

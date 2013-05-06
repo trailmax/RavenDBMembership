@@ -3,11 +3,11 @@ using System.Collections.Specialized;
 
 namespace RavenDBMembership.Config
 {
-    internal class MembershipConfigReader
+    internal class ConfigReader
     {
         private readonly NameValueCollection config;
 
-        public MembershipConfigReader(NameValueCollection config)
+        public ConfigReader(NameValueCollection config)
         {
             this.config = config;
         }

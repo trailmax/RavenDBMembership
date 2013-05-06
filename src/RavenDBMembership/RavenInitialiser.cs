@@ -22,7 +22,7 @@ namespace RavenDBMembership
         /// <returns></returns>
         public static IDocumentStore InitialiseDocumentStore(NameValueCollection configCollection)
         {
-            var config = new MembershipConfigReader(configCollection);
+            var config = new ConfigReader(configCollection);
 
             // Connection String Name
             var connectionStringName = config.ConnectionStringName();
@@ -50,7 +50,7 @@ namespace RavenDBMembership
             {
                 return DocumentStoreInMemory();
             }
-
+            
             throw new ConfigurationErrorsException("RavenDB connection is not configured. To get running quickly, to your provider configuration in web.config add \"inmemory=true\" for in-memory storage.");
         }
 
@@ -66,16 +66,16 @@ namespace RavenDBMembership
         }
 
 
-        private static IDocumentStore DocumentStoreEmbedded(MembershipConfigReader membershipConfig)
+        private static IDocumentStore DocumentStoreEmbedded(ConfigReader config)
         {
-            if (String.IsNullOrEmpty(membershipConfig.EmbeddedDataDirectory()))
+            if (String.IsNullOrEmpty(config.EmbeddedDataDirectory()))
             {
                 throw new ConfigurationErrorsException(
                     "For Embedded Mode please provide DataDir parameter with address where to store files. I.e. DataDir=~/Data ");
             }
             var documentStore = new EmbeddableDocumentStore()
                                 {
-                                    DataDirectory = membershipConfig.EmbeddedDataDirectory(),
+                                    DataDirectory = config.EmbeddedDataDirectory(),
                                 };
             documentStore.Initialize();
             return documentStore;
