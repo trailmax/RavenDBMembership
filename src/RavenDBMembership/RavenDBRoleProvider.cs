@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration.Provider;
 using System.Linq;
 using System.Web.Security;
 using System.Collections.Specialized;
@@ -53,13 +54,11 @@ namespace RavenDBMembership
             using (var session = DocumentStore.OpenSession())
             {
                 var users = (from u in session.Query<User>()
-                             where u.Username.In(usernames)
-                             && u.ApplicationName == ApplicationName
+                             where u.Username.In(usernames) && u.ApplicationName == this.ApplicationName
                              select u).ToList();
 
                 var roles = (from r in session.Query<Role>()
-                             where r.Name.In(roleNames)
-                             && r.ApplicationName == ApplicationName
+                             where r.Name.In(roleNames) && r.ApplicationName == this.ApplicationName
                              select r.Id).ToList();
 
                 foreach (var roleId in roles)
@@ -77,20 +76,11 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                try
-                {
-                    var role = new Role(roleName, null);
-                    role.ApplicationName = ApplicationName;
+                var role = new Role(roleName, null);
+                role.ApplicationName = ApplicationName;
 
-                    session.Store(role);
-                    session.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    // TODO: log exception properly
-                    Console.WriteLine(ex.ToString());
-                    throw;
-                }
+                session.Store(role);
+                session.SaveChanges();
             }
         }
 
@@ -98,37 +88,28 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                try
+                var role = (from r in session.Query<Role>()
+                            where r.Name == roleName && r.ApplicationName == this.ApplicationName
+                            select r).SingleOrDefault();
+                if (role != null)
                 {
-                    var role = (from r in session.Query<Role>()
-                                where r.Name == roleName && r.ApplicationName == ApplicationName
-                                select r).SingleOrDefault();
-                    if (role != null)
+                    // also find users that have this role
+                    var users = (from u in session.Query<User>()
+                                 where u.Roles.Any(roleId => roleId == role.Id)
+                                 select u).ToList();
+                    if (users.Any() && throwOnPopulatedRole)
                     {
-                        // also find users that have this role
-                        var users = (from u in session.Query<User>()
-                                     where u.Roles.Any(roleId => roleId == role.Id)
-                                     select u).ToList();
-                        if (users.Any() && throwOnPopulatedRole)
-                        {
-                            throw new Exception(String.Format("Role {0} contains members and cannot be deleted.", role.Name));
-                        }
-                        foreach (var user in users)
-                        {
-                            user.Roles.Remove(role.Id);
-                        }
-                        session.Delete(role);
-                        session.SaveChanges();
-                        return true;
+                        throw new ProviderException(String.Format("Role {0} contains members and cannot be deleted.", role.Name));
                     }
-                    return false;
+                    foreach (var user in users)
+                    {
+                        user.Roles.Remove(role.Id);
+                    }
+                    session.Delete(role);
+                    session.SaveChanges();
+                    return true;
                 }
-                catch (Exception ex)
-                {
-                    // TODO: log exception properly
-                    Console.WriteLine(ex.ToString());
-                    throw;
-                }
+                return false;
             }
         }
 
@@ -227,33 +208,24 @@ namespace RavenDBMembership
             }
             using (var session = DocumentStore.OpenSession())
             {
-                try
+                var users = (from u in session.Query<User>()
+                             where u.Username.In(usernames) && u.ApplicationName == ApplicationName
+                             select u).ToList();
+
+                var roles = (from r in session.Query<Role>()
+                             where r.Name.In(roleNames) && r.ApplicationName == ApplicationName
+                             select r.Id).ToList();
+
+
+                foreach (var roleId in roles)
                 {
-                    var users = (from u in session.Query<User>()
-                                 where u.Username.In(usernames) && u.ApplicationName == ApplicationName
-                                 select u).ToList();
-
-                    var roles = (from r in session.Query<Role>()
-                                 where r.Name.In(roleNames) && r.ApplicationName == ApplicationName
-                                 select r.Id).ToList();
-
-
-                    foreach (var roleId in roles)
+                    var usersWithRole = users.Where(u => u.Roles.Any(x => x == roleId));
+                    foreach (var user in usersWithRole)
                     {
-                        var usersWithRole = users.Where(u => u.Roles.Any(x => x == roleId));
-                        foreach (var user in usersWithRole)
-                        {
-                            user.Roles.Remove(roleId);
-                        }
+                        user.Roles.Remove(roleId);
                     }
-                    session.SaveChanges();
                 }
-                catch (Exception ex)
-                {
-                    // TODO: log exception properly
-                    Console.WriteLine(ex.ToString());
-                    throw;
-                }
+                session.SaveChanges();
             }
         }
 

@@ -80,6 +80,7 @@
     <Compile Include="RavenDBRoleProviderTests.cs" />
     <Compile Include="TestHelpers\AssertionHelpers.cs" />
     <Compile Include="TestHelpers\ConfigBuilderTests.cs" />
+    <Compile Include="TestHelpers\RoleBuilder.cs" />
     <Compile Include="TestHelpers\UserBuilder.cs" />
     <Compile Include="RavenDBMembershipProviderTests.cs" />
     <Compile Include="UserTests.cs" />

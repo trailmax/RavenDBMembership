@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Configuration.Provider;
 using Moq;
 using NUnit.Framework;
 using System.Linq;
@@ -22,7 +23,6 @@ namespace RavenDBMembership.Tests
         private const string ProviderName = "RavenDBMembership";
 
         private RavenDBRoleProvider sut;
-        //private Fixture fixture;
 
         [SetUp]
         public void SetUp()
@@ -31,12 +31,6 @@ namespace RavenDBMembership.Tests
                       {
                           DocumentStore = null
                       };
-
-            //fixture = new Fixture();
-            //fixture.Behaviors.Remove(new ThrowingRecursionBehavior());
-            //fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-            //fixture.Register(() => new Role(fixture.Create<String>(), null){ ApplicationName = sut.ApplicationName});
-            //fixture.Register(() => new UserBuilder().Build());
         }
 
         [TearDown]
@@ -118,57 +112,219 @@ namespace RavenDBMembership.Tests
         }
 
 
+        [Test]
+        public void CreateRole_GivenRoleName_StoresInRaven()
+        {
+            //Arrange
+            var session = new Mock<IDocumentSession>();
+            session.Setup(s => s.Store(It.IsAny<Role>())).Verifiable();
+            session.Setup(s => s.SaveChanges()).Verifiable();
+            var docStore = new Mock<IDocumentStore>();
+            docStore.Setup(s => s.OpenSession()).Returns(session.Object);
+
+            sut.DocumentStore = docStore.Object;
+
+            // Act
+            sut.CreateRole(Util.RandomString());
+
+            // Assert
+            session.VerifyAll();
+        }
+
+        [Test]
+        public void CreateRole_GivenRoleName_CreatesCorrectRole()
+        {
+            //Arrange
+            var newRole = new Role(null, null);
+
+            var session = new Mock<IDocumentSession>();
+            session.Setup(s => s.Store(It.IsAny<Role>())).Callback((object value) => newRole = (Role)value);
+
+            var docStore = new Mock<IDocumentStore>();
+            docStore.Setup(s => s.OpenSession()).Returns(session.Object);
+            sut.DocumentStore = docStore.Object;
+
+            var roleName = Util.RandomString();
+            // Act
+            sut.CreateRole(roleName);
+
+            // Assert
+            Assert.AreEqual(roleName, newRole.Name);
+            Assert.AreEqual(sut.ApplicationName, newRole.ApplicationName);
+            Assert.IsNull(newRole.ParentRoleId);
+        }
+
+
+        [Test]
+        public void DeleteRole_RoleNotExists_ReturnsFalse()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            // Act
+            var result = sut.DeleteRole("randomNonExisting", true);
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+
+        [Test]
+        public void DeleteRole_RoleHasUsersAskForThrow_ThrowsException()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+            var user = new UserBuilder().WithRole(role).Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.Store(user);
+                session.SaveChanges();
+            }
+
+
+            // Act && Assert
+            Assert.Throws<ProviderException>(() => sut.DeleteRole(role.Name, true));
+        }
+
+        [Test]
+        public void DeleteRole_RoleHasUsersAskNoThrow_RemovesUsersFromRole()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+            var user = new UserBuilder().WithRole(role).Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.Store(user);
+                session.SaveChanges();
+            }
+
+
+            // Act
+            sut.DeleteRole(role.Name, false);
+
+            // Assert
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var dbUser = session.Query<User>().First(u => u.Username == user.Username);
+                Assert.IsEmpty(dbUser.Roles);
+            }
+        }
+
+        [Test]
+        public void DeleteRole_NoUsers_RoleGetsDeleted()
+        {
+            // Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.DeleteRole(role.Name, false);
+
+            // Assert
+            Assert.IsTrue(result);
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                var dbRole = session.Query<Role>().FirstOrDefault(r => r.Name == role.Name);
+                Assert.IsNull(dbRole);
+            }
+        }
+
+
+        [Test]
+        public void FindUsersInRole_NoRole_ReturnsNull()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            // Act
+            var result = sut.FindUsersInRole("nonExisting", "nonExisting");
+
+            // Assert
+            Assert.IsNull(result);
+        }
+
+
+        [Test]
+        public void FindUsersInRole_RoleExistsNoUsers_ReturnsEmptyArray()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+            var role = new RoleBuilder().Build();
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.FindUsersInRole(role.Name, "nonExisting");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsEmpty(result);
+        }
+
+
+        //[Test]
+        //public void FindUsersInRole_returns_users_in_role()
+        //{
+        //    var roles = testRoles;
+        //    for (int i = 0; i < roles.Length; i++)
+        //    {
+        //        roles[i].ApplicationName = AppName;
+        //    }
+        //    var user = new User();
+        //    user.Username = TestUserName;
+        //    user.ApplicationName = AppName;
+
+        //    using (var store = InMemoryStore())
+        //    {
+        //        //Arrange
+        //        store.Initialize();
+        //        using (var session = store.OpenSession())
+        //        {
+        //            foreach (var role in roles)
+        //            {
+        //                session.Store(role);
+        //            }
+        //            session.Store(user);
+        //            session.SaveChanges();
+        //        }
+
+        //        var provider = new RavenDBRoleProvider();
+        //        provider.DocumentStore = store;
+        //        provider.ApplicationName = AppName;
+        //        provider.AddUsersToRoles(new[] { user.Username }, new[] { "Role 1", "Role 2" });
+
+        //        //Act
+        //        string[] users = provider.FindUsersInRole("Role 1", user.Username);
+
+        //        //Assert
+        //        Assert.True(users.Contains(user.Username));
+
+        //    }
+        //}
+
+
         /////////////////////////////////////////////////////////////////////////////////
 
         /*
-        [Test]
-        public void StoreRole()
-        {
-            var newRole = new Role("Users", null);
 
-            using (var store = InMemoryStore())
-            {
-                using (var session = store.OpenSession())
-                {
-                    session.Store(newRole);
-                    session.SaveChanges();
-                }
-
-                Thread.Sleep(500);
-
-                using (var session = store.OpenSession())
-                {
-                    var role = session.Query<Role>().FirstOrDefault();
-                    Assert.NotNull(role);
-                    Assert.AreEqual("authorization/roles/users", role.Id.ToLower().ToLower());
-                }
-            }
-        }
-
-        [Test]
-        public void StoreRoleWithApplicationName()
-        {
-            var newRole = new Role("Users", null);
-            newRole.ApplicationName = AppName;
-
-            using (var store = InMemoryStore())
-            {
-                using (var session = store.OpenSession())
-                {
-                    session.Store(newRole);
-                    session.SaveChanges();
-                }
-
-                Thread.Sleep(500);
-
-                using (var session = store.OpenSession())
-                {
-                    var role = session.Query<Role>().FirstOrDefault();
-                    Assert.NotNull(role);
-                    Assert.AreEqual("authorization/roles/myapplication/users", role.Id.ToLower());
-                }
-            }
-        }
 
         [Test]
         public void StoreRoleWithParentRole()
@@ -261,45 +417,6 @@ namespace RavenDBMembership.Tests
             }
         }
 
-        [Test]
-        public void FindUsersInRole_returns_users_in_role()
-        {
-            var roles = testRoles;
-            for (int i = 0; i < roles.Length; i++)
-            {
-                roles[i].ApplicationName = AppName;
-            }
-            var user = new User();
-            user.Username = TestUserName;
-            user.ApplicationName = AppName;
-
-            using (var store = InMemoryStore())
-            {
-                //Arrange
-                store.Initialize();
-                using (var session = store.OpenSession())
-                {
-                    foreach (var role in roles)
-                    {
-                        session.Store(role);
-                    }
-                    session.Store(user);
-                    session.SaveChanges();
-                }
-
-                var provider = new RavenDBRoleProvider();
-                provider.DocumentStore = store;
-                provider.ApplicationName = AppName;
-                provider.AddUsersToRoles(new[] { user.Username }, new[] { "Role 1", "Role 2" });
-
-                //Act
-                string[] users = provider.FindUsersInRole("Role 1", user.Username);
-
-                //Assert
-                Assert.True(users.Contains(user.Username));
-
-            }
-        }
 
         [Test]
         public void GetRolesForUser_returns_roles_for_given_users()

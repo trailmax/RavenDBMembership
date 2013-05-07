@@ -97,6 +97,12 @@ namespace RavenDBMembership.Tests.TestHelpers
             user.LastFailedPasswordAttempt = dateTime;
             return this;
         }
+
+        public UserBuilder WithRole(Role role)
+        {
+            user.Roles.Add(role.Id);
+            return this;
+        }
     }
 
     [TestFixture]
