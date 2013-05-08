@@ -121,17 +121,23 @@ namespace RavenDBMembership
                 var role = (from r in session.Query<Role>()
                             where r.Name == roleName && r.ApplicationName == ApplicationName
                             select r).FirstOrDefault();
-                if (role != null)
+                if (role == null)
                 {
-                    // Find users
-                    var users = from u in session.Query<User>()
-                                where u.Roles.Any(x => x == role.Id) && u.Username == usernameToMatch
-                                select u.Username;
-                    return users.ToArray();
+                    throw new ProviderException("Role is not found");
                 }
-                return null;
+
+                // Find users
+                var users = session.Query<User>()
+                                   .Where(u => u.Roles.Any(r => r == role.Id))
+                                   .Search(u => u.Username, usernameToMatch)
+                                   .Select(u => u.Username);
+                //var users = from u in session.Query<User>()
+                //            where u.Roles.Any(x => x == role.Id) && u.Username == usernameToMatch
+                //            select u.Username;
+                return users.ToArray();
             }
         }
+
 
         public override string[] GetAllRoles()
         {

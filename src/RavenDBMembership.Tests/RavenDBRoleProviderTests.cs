@@ -246,16 +246,13 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void FindUsersInRole_NoRole_ReturnsNull()
+        public void FindUsersInRole_NoRole_ThrowsException()
         {
             //Arrange
             sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
 
-            // Act
-            var result = sut.FindUsersInRole("nonExisting", "nonExisting");
-
-            // Assert
-            Assert.IsNull(result);
+            // Act && Assert
+            Assert.Throws<ProviderException>(() => sut.FindUsersInRole("nonExisting", "nonExisting"));
         }
 
 
@@ -279,6 +276,55 @@ namespace RavenDBMembership.Tests
             Assert.IsEmpty(result);
         }
 
+        [Test]
+        public void FindUsersInRole_UsersInRoleMatchFullUsername_ReturnCorrectUsers()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+            var user = new UserBuilder().WithRole(role).Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.Store(user);
+                session.SaveChanges();
+            }
+
+
+            // Act
+            var username = user.Username;
+            var result = sut.FindUsersInRole(role.Name, username);
+
+            // Assert
+            Assert.Contains(user.Username, result);
+        }
+
+
+        [Test]
+        public void FindUsersInRole_UsersInRoleMatchPartUsername_ReturnCorrectUsers()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+            var user = new UserBuilder().WithUsername("HelloMiddleWorld").WithRole(role).Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.Store(user);
+                session.SaveChanges();
+            }
+
+
+            // Act
+            var result = sut.FindUsersInRole(role.Name, "Middle");
+
+            // Assert
+            Assert.Contains(user.Username, result);
+        }
 
         //[Test]
         //public void FindUsersInRole_returns_users_in_role()

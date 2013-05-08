@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Reflection;
+using Raven.Abstractions.Indexing;
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
+using Raven.Client.Indexes;
 using RavenDBMembership.Config;
 
 namespace RavenDBMembership
@@ -24,6 +28,19 @@ namespace RavenDBMembership
         {
             var config = new ConfigReader(configCollection);
 
+            var documentStore = CreateDocumentStore(config);
+
+            documentStore.Initialize();
+
+            // add all indexes available in the assembly
+            IndexCreation.CreateIndexes(Assembly.GetExecutingAssembly(), documentStore);
+
+            return documentStore;
+        }
+
+
+        private static IDocumentStore CreateDocumentStore(ConfigReader config)
+        {
             // Connection String Name
             var connectionStringName = config.ConnectionStringName();
             if (!String.IsNullOrEmpty(connectionStringName))
@@ -50,7 +67,7 @@ namespace RavenDBMembership
             {
                 return DocumentStoreInMemory();
             }
-            
+
             throw new ConfigurationErrorsException("RavenDB connection is not configured. To get running quickly, to your provider configuration in web.config add \"inmemory=true\" for in-memory storage.");
         }
 
@@ -61,7 +78,6 @@ namespace RavenDBMembership
                                 {
                                     RunInMemory = true,
                                 };
-            documentStore.Initialize();
             return documentStore;
         }
 
@@ -77,7 +93,6 @@ namespace RavenDBMembership
                                 {
                                     DataDirectory = config.EmbeddedDataDirectory(),
                                 };
-            documentStore.Initialize();
             return documentStore;
         }
 
@@ -88,7 +103,6 @@ namespace RavenDBMembership
                                 {
                                     Url = connectionUrl,
                                 };
-            documentStore.Initialize();
             return documentStore;
         }
 
@@ -112,7 +126,6 @@ namespace RavenDBMembership
                                     };
             }
 
-            documentStore.Initialize();
             return documentStore;
         }
     }
