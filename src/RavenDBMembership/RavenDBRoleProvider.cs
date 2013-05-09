@@ -128,13 +128,15 @@ namespace RavenDBMembership
 
                 // Find users
                 var users = session.Query<User>()
-                                   .Where(u => u.Roles.Any(r => r == role.Id))
                                    .Search(u => u.Username, usernameToMatch)
-                                   .Select(u => u.Username);
-                //var users = from u in session.Query<User>()
-                //            where u.Roles.Any(x => x == role.Id) && u.Username == usernameToMatch
-                //            select u.Username;
-                return users.ToArray();
+                                   .ToList();
+
+                var usernames = session.Query<User>()
+                                   .Search(u => u.Username, usernameToMatch)
+                                   .Where(u => u.Roles.Any(r => r == role.Id))
+                                   .Select(u => u.Username)
+                                   .ToArray();
+                return usernames;
             }
         }
 

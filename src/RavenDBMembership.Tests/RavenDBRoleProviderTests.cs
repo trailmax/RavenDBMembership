@@ -310,6 +310,31 @@ namespace RavenDBMembership.Tests
 
             var role = new RoleBuilder().Build();
             var user = new UserBuilder().WithUsername("HelloMiddleWorld").WithRole(role).Build();
+            var user2 = new UserBuilder().WithUsername("James").WithRole(role).Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.Store(user);
+                session.Store(user2);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.FindUsersInRole(role.Name, "Middle");
+
+            // Assert
+            Assert.Equals(user.Username, result.Single());
+        }
+
+        [Test]
+        public void FindUsersInRole_NoUsersInRoleButMatchUsername_ReturnEmptyArray()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+            var user = new UserBuilder().WithUsername("HelloMiddleWorld").Build();
 
             using (var session = sut.DocumentStore.OpenSession())
             {
@@ -318,12 +343,11 @@ namespace RavenDBMembership.Tests
                 session.SaveChanges();
             }
 
-
             // Act
             var result = sut.FindUsersInRole(role.Name, "Middle");
 
             // Assert
-            Assert.Contains(user.Username, result);
+            Assert.IsEmpty(result);
         }
 
         //[Test]

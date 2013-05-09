@@ -3,6 +3,7 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Web.Security;
+using Raven.Client;
 using RavenDBMembership.Config;
 using RavenDBMembership.Tests.TestHelpers;
 
@@ -1077,7 +1078,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var updatedUser = session.Query<User>().FirstOrDefault(u => u.Username == user.Username);
+                var updatedUser = session.Load<User>(user.Id);
                 AssertionHelpers.PropertiesAreEqual(updatedUser, membershipUser, "PasswordQuestion");
             }
         }

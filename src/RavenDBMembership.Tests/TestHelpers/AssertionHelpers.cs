@@ -23,6 +23,14 @@ namespace RavenDBMembership.Tests.TestHelpers
         /// <param name="ignoredProperties"></param>
         public static void PropertiesAreEqual(object expected, object actual, IEnumerable<string> ignoredProperties = null)
         {
+            if (expected == null && actual == null)
+            {
+                Assert.Fail("Both of the objects are null");
+            }
+            if ( (expected == null && actual != null) || (expected != null && actual == null)  )
+            {
+                Assert.Fail("One of the objects is null");
+            }
             // if we try to compare objects that have equals defined on them, just use that!
             if (expected.Equals(actual))
             {
