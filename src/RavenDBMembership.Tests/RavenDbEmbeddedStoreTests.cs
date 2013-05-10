@@ -8,7 +8,7 @@ namespace RavenDBMembership.Tests
     /// <summary>
     /// These are exploratory tests.
     /// </summary>
-    [TestFixture]
+    [TestFixture, Ignore]
     public class RavenDbEmbeddedStoreTests
     {
         private EmbeddableDocumentStore documentStore;

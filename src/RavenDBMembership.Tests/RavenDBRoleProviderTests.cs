@@ -352,45 +352,180 @@ namespace RavenDBMembership.Tests
             Assert.IsEmpty(result);
         }
 
-        //[Test]
-        //public void FindUsersInRole_returns_users_in_role()
-        //{
-        //    var roles = testRoles;
-        //    for (int i = 0; i < roles.Length; i++)
-        //    {
-        //        roles[i].ApplicationName = AppName;
-        //    }
-        //    var user = new User();
-        //    user.Username = TestUserName;
-        //    user.ApplicationName = AppName;
 
-        //    using (var store = InMemoryStore())
-        //    {
-        //        //Arrange
-        //        store.Initialize();
-        //        using (var session = store.OpenSession())
-        //        {
-        //            foreach (var role in roles)
-        //            {
-        //                session.Store(role);
-        //            }
-        //            session.Store(user);
-        //            session.SaveChanges();
-        //        }
+        [Test]
+        public void GetAllRoles_NoRoles_ReturnsEmptyList()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
 
-        //        var provider = new RavenDBRoleProvider();
-        //        provider.DocumentStore = store;
-        //        provider.ApplicationName = AppName;
-        //        provider.AddUsersToRoles(new[] { user.Username }, new[] { "Role 1", "Role 2" });
+            // Act
+            var result = sut.GetAllRoles();
 
-        //        //Act
-        //        string[] users = provider.FindUsersInRole("Role 1", user.Username);
+            // Assert
+            Assert.IsEmpty(result);
+        }
 
-        //        //Assert
-        //        Assert.True(users.Contains(user.Username));
 
-        //    }
-        //}
+        [Test]
+        public void GetAllRoles_RolesExist_ReturnAllExisting()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role1 = new RoleBuilder().Build();
+            var role2 = new RoleBuilder().Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role1);
+                session.Store(role2);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.GetAllRoles();
+
+            // Assert
+            Assert.Contains(role1.Name, result);
+            Assert.Contains(role2.Name, result);
+            Assert.AreEqual(2, result.Count());
+        }
+
+
+        [Test]
+        public void GetRolesForUser_EmptyUsername_ThrowsException()
+        {
+            Assert.Throws<ProviderException>(() => sut.GetRolesForUser(String.Empty));
+        }
+
+        [Test]
+        public void GetRolesForUser_NoUserExist_ThrowsException()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            // Act && Assert
+            Assert.Throws<ProviderException>(() => sut.GetRolesForUser("Username"));
+        }
+
+        [Test]
+        public void GetRolesForUser_UserHasNoRoles_ReturnsEmptyArray()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role1 = new RoleBuilder().Build();
+            var user = new UserBuilder().Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role1);
+                session.Store(user);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.GetRolesForUser(user.Username);
+
+            // Assert
+            Assert.IsEmpty(result);
+        }
+
+
+        [Test]
+        public void GetRolesForUser_UserHasRoles_ReturnsListOfRoleNames()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role1 = new RoleBuilder().Build();
+            var role2 = new RoleBuilder().Build();
+            var role3 = new RoleBuilder().Build();
+            var user = new UserBuilder().WithRole(role1).WithRole(role2).Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role1);
+                session.Store(role2);
+                session.Store(role3);
+                session.Store(user);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.GetRolesForUser(user.Username);
+
+            // Assert
+            var expected = new string[] { role1.Name, role2.Name };
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void GetUsersInRole_EmptyRoleName_ThrowsException()
+        {
+            Assert.Throws<ProviderException>(() => sut.GetUsersInRole(String.Empty));
+        }
+
+
+        [Test]
+        public void GetUsersInRole_NonExistingRole_ExpectedBehaviour()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            // Act && Assert
+            Assert.Throws<ProviderException>(() => sut.GetUsersInRole("SomeRole"));
+        }
+
+
+        [Test]
+        public void GetUsersInRole_NoUsersExist_ReturnsEmptyArray()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role1 = new RoleBuilder().Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role1);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.GetUsersInRole(role1.Name);
+
+            // Assert
+            Assert.IsEmpty(result);
+        }
+
+
+        [Test]
+        public void GetUsersInRole_UsersExistInRole_ReturnsArrayOfUsernames()
+        {
+            //Arrange
+            sut.Initialize(ProviderName, new StorageConfigBuilder().Build());
+
+            var role = new RoleBuilder().Build();
+            var user1 = new UserBuilder().WithRole(role).Build();
+            var user2 = new UserBuilder().Build();
+
+            using (var session = sut.DocumentStore.OpenSession())
+            {
+                session.Store(role);
+                session.Store(user1);
+                session.Store(user2);
+                session.SaveChanges();
+            }
+
+            // Act
+            var result = sut.GetUsersInRole(role.Name);
+
+            // Assert
+            Assert.AreEqual(user1.Username, result.Single());
+        }
+
 
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -486,44 +621,6 @@ namespace RavenDBMembership.Tests
                     Assert.False(u.Roles.Any(x => x.ToLower() == "role 1"));
                     Assert.True(u.Roles.Any(x => x.ToLower() != "role 2"));
                 }
-            }
-        }
-
-
-        [Test]
-        public void GetRolesForUser_returns_roles_for_given_users()
-        {
-            var roles = testRoles;
-            for (int i = 0; i < roles.Length; i++)
-            {
-                roles[i].ApplicationName = AppName;
-            }
-            var user = new User();
-            user.Username = TestUserName;
-            user.ApplicationName = AppName;
-
-            using (var store = InMemoryStore())
-            {
-                store.Initialize();
-                using (var session = store.OpenSession())
-                {
-                    foreach (var role in roles)
-                    {
-                        session.Store(role);
-                    }
-                    session.Store(user);
-                    session.SaveChanges();
-                }
-
-                var provider = new RavenDBRoleProvider();
-                provider.DocumentStore = store;
-                provider.ApplicationName = AppName;
-                provider.AddUsersToRoles(new[] { user.Username }, new[] { "Role 1", "Role 2" });
-
-                string[] returnedRoles = provider.GetRolesForUser(user.Username);
-
-                Assert.True(returnedRoles.Contains("Role 1") && returnedRoles.Contains("Role 2") && !returnedRoles.Contains("Role 3"));
-
             }
         }
          */

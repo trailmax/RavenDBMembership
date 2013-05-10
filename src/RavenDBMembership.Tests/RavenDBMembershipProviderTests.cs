@@ -3,7 +3,6 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Web.Security;
-using Raven.Client;
 using RavenDBMembership.Config;
 using RavenDBMembership.Tests.TestHelpers;
 

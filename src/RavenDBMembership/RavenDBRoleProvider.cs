@@ -146,7 +146,10 @@ namespace RavenDBMembership
             }
         }
 
-
+        /// <summary>
+        /// A string array containing the names of all the roles stored in the data source for the configured applicationName.
+        /// </summary>
+        /// <returns>Array of strings with names of roles</returns>
         public override string[] GetAllRoles()
         {
             using (var session = DocumentStore.OpenSession())
@@ -158,13 +161,29 @@ namespace RavenDBMembership
             }
         }
 
+
+        /// <summary>
+        /// A string array containing the names of all the roles that the specified user is in for the configured applicationName.
+        /// 
+        /// Throws ProviderException if username is empty or user with this username does not exist
+        /// </summary>
+        /// <param name="username">Full username of required user</param>
+        /// <returns>Array of strings with names of roles</returns>
         public override string[] GetRolesForUser(string username)
         {
+            if (String.IsNullOrEmpty(username))
+            {
+                throw new ProviderException("Username must be not null and not empty");
+            }
             using (var session = DocumentStore.OpenSession())
             {
                 var user = (from u in session.Query<User>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
+                if (user == null)
+                {
+                    throw new ProviderException("User with this username does not exist");
+                }
 
                 if (user.Roles.Count() != 0)
                 {
@@ -175,21 +194,34 @@ namespace RavenDBMembership
             }
         }
 
+
+        /// <summary>
+        /// Gets a list of users in the specified role for the configured applicationName.
+        /// 
+        /// Throws provider exception if RoleName is empty or role does not exist
+        /// </summary>
+        /// <param name="roleName"></param>
+        /// <returns></returns>
         public override string[] GetUsersInRole(string roleName)
         {
+            if (String.IsNullOrEmpty(roleName))
+            {
+                throw new ProviderException("RoleName can not be empty");
+            }
+
             using (var session = DocumentStore.OpenSession())
             {
                 var role = (from r in session.Query<Role>()
                             where r.Name == roleName && r.ApplicationName == ApplicationName
                             select r).SingleOrDefault();
-                if (role != null)
+                if (role == null)
                 {
-                    var usernames = from u in session.Query<User>()
-                                    where u.Roles.Any(x => x == role.Id)
-                                    select u.Username;
-                    return usernames.ToArray();
+                    throw new ProviderException("Role does not exist");
                 }
-                return null;
+                var usernames = from u in session.Query<User>()
+                                where u.Roles.Any(x => x == role.Id)
+                                select u.Username;
+                return usernames.ToArray();
             }
         }
 
