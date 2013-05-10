@@ -1,14 +1,15 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
+using Raven.Abstractions.Indexing;
 using Raven.Client.Indexes;
 
 namespace RavenDBMembership
 {
-    public class UserByUsernameIndex : AbstractIndexCreationTask<User, String>
+    public class UserByUsernameIndex : AbstractIndexCreationTask<User>
     {
         public UserByUsernameIndex()
         {
-            Map = users => from user in users select new { user.Username };
+            Map = users => from user in users select new { user.Username};
+            Index(x => x.Username, FieldIndexing.Analyzed);
         }
     }
 }

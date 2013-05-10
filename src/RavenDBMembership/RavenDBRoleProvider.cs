@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration.Provider;
 using System.Linq;
+using System.Text;
 using System.Web.Security;
 using System.Collections.Specialized;
 using Raven.Client;
@@ -113,6 +114,14 @@ namespace RavenDBMembership
             }
         }
 
+
+
+        /// <summary>
+        /// Finds all users that belong to the role and with username that starts with match
+        /// </summary>
+        /// <param name="roleName">Name of a role</param>
+        /// <param name="usernameToMatch">String with usernames to match. Match is done by .StartsWith()</param>
+        /// <returns>Array of usernames that match the given criteria</returns>
         public override string[] FindUsersInRole(string roleName, string usernameToMatch)
         {
             using (var session = DocumentStore.OpenSession())
@@ -127,12 +136,9 @@ namespace RavenDBMembership
                 }
 
                 // Find users
-                var users = session.Query<User>()
-                                   .Search(u => u.Username, usernameToMatch)
-                                   .ToList();
-
+                var searchTerms = new StringBuilder().Append(usernameToMatch).Append("*").ToString();
                 var usernames = session.Query<User>()
-                                   .Search(u => u.Username, usernameToMatch)
+                                   .Search(u => u.Username, searchTerms, escapeQueryOptions: EscapeQueryOptions.AllowPostfixWildcard)
                                    .Where(u => u.Roles.Any(r => r == role.Id))
                                    .Select(u => u.Username)
                                    .ToArray();
