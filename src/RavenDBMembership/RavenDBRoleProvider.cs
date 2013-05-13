@@ -77,7 +77,7 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var role = new Role(roleName, null);
+                var role = new Role(roleName);
                 role.ApplicationName = ApplicationName;
 
                 session.Store(role);
@@ -225,33 +225,68 @@ namespace RavenDBMembership
             }
         }
 
+
+        /// <summary>
+        /// Gets a value indicating whether the specified user is in the specified role for the configured applicationName.
+        /// 
+        /// Throws ProviderException if username or rolename is null or empty. Or if user or role does not exist.
+        /// </summary>
+        /// <param name="username">The user name to search for.</param>
+        /// <param name="roleName">The role to search in.</param>
+        /// <returns></returns>
         public override bool IsUserInRole(string username, string roleName)
         {
+            if (String.IsNullOrEmpty(username) || String.IsNullOrEmpty(roleName))
+            {
+                throw new ProviderException("Username and roleName must not be empty");
+            }
             using (var session = DocumentStore.OpenSession())
             {
                 var user = session.Query<User>()
                     .FirstOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
 
-                if (user != null)
+                if (user == null)
                 {
-                    var role = (from r in session.Query<Role>()
-                                where r.Name == roleName && r.ApplicationName == ApplicationName
-                                select r.Id).FirstOrDefault();
-                    if (role != null)
-                    {
-                        return user.Roles.Any(x => x == role);
-                    }
+                    throw new ProviderException("User with this username does not exist");
                 }
-                return false;
+
+                var role = session.Query<Role>()
+                    .FirstOrDefault(r => r.Name == roleName && r.ApplicationName == ApplicationName);
+
+                if (role == null)
+                {
+                    throw new ProviderException("Role with this name does not exist");
+                }
+
+                return user.Roles.Any(x => x == role.Id);
             }
         }
 
+
+        /// <summary>
+        /// Removes the specified user names from the specified roles for the configured applicationName.
+        /// 
+        /// Does not do a thing if there are no usernames or no roles.
+        /// 
+        /// Throws a ProviderException in the following cases: 
+        /// a) any usernames or rolenames are null or empty
+        /// b) any usernames correspond to non-existing usernames
+        /// c) any rolename correspond to non-existing rolenames
+        /// </summary>
+        /// <param name="usernames"></param>
+        /// <param name="roleNames"></param>
         public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)
         {
             if (usernames.Length == 0 || roleNames.Length == 0)
             {
                 return;
             }
+
+            if (usernames.Any(string.IsNullOrEmpty) || roleNames.Any(String.IsNullOrEmpty))
+            {
+                throw new ProviderException("All usernames and rolenames must not be empty or nulls");
+            }
+
             using (var session = DocumentStore.OpenSession())
             {
                 var users = (from u in session.Query<User>()
@@ -262,12 +297,17 @@ namespace RavenDBMembership
                              where r.Name.In(roleNames) && r.ApplicationName == ApplicationName
                              select r.Id).ToList();
 
+                if (users.Count != usernames.Count() || roles.Count != roleNames.Count())
+                {
+                    throw  new ProviderException("Some roles or usernames were not found. Please verify all usernames and roles are correct.");
+                }
 
                 foreach (var roleId in roles)
                 {
-                    var usersWithRole = users.Where(u => u.Roles.Any(x => x == roleId));
+                    var usersWithRole = users.Where(u => u.Roles.Any(x => x.ToLower() == roleId.ToLower())).ToList();
                     foreach (var user in usersWithRole)
                     {
+                        user.Roles = user.Roles.Select(r => r.ToLower()).ToList();
                         user.Roles.Remove(roleId);
                     }
                 }
@@ -277,6 +317,10 @@ namespace RavenDBMembership
 
         public override bool RoleExists(string roleName)
         {
+            if (String.IsNullOrEmpty(roleName))
+            {
+                throw new ProviderException("Rolename must not be empty");
+            }
             using (var session = DocumentStore.OpenSession())
             {
                 return session.Query<Role>().Any(r => r.Name == roleName);

@@ -2,46 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration.Provider;
-using System.Linq;
 using System.Reflection;
-using NUnit.Framework;
 using Raven.Client;
-using Raven.Client.Document;
-using Raven.Client.Embedded;
 
 namespace RavenDBMembership.Tests.TestHelpers
 {
-    public abstract class AbstractTestBase
+    public static class TestHelpers
     {
-        //protected IDocumentStore InMemoryStore()
-        //{
-        //    var documentStore = new EmbeddableDocumentStore
-        //    {
-        //        RunInMemory = true,
-        //        //UseEmbeddedHttpServer = true
-        //    };
-        //    documentStore.Initialize();
-        //    return documentStore;
-        //}
-
-        
-        //protected IDocumentStore LocalHostStore()
-        //{
-        //    var documentStore = new DocumentStore() { Url = "http://localhost:8080", DefaultDatabase = "TestDB" };
-        //    documentStore.Initialize();
-        //    return documentStore;
-        //}
-
-
-
-        //public static User GetUserFromDocumentStore(IDocumentStore store, string username)
-        //{
-        //    using (var session = store.OpenSession())
-        //    {
-        //        return session.Query<User>().FirstOrDefault(x => x.Username == username);
-        //    }
-        //}
-
         /// <summary>
         /// Saves the user in the document store
         /// </summary>
@@ -116,7 +83,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             var roles = new List<Role>(numberOfRoles);
             for (int i = 0; i < numberOfRoles; i++)
             {
-                var role = new Role(Util.RandomString(10), null)
+                var role = new Role(Util.RandomString(10))
                                {
                                    ApplicationName = "/"
                                };

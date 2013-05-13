@@ -44,11 +44,11 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
 
             //Act
@@ -65,10 +65,10 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             //Act
             MembershipCreateStatus status;
@@ -88,7 +88,7 @@ namespace RavenDBMembership.Tests
                 .EnablePasswordReset(true)
                 .RequiresPasswordAndAnswer(true).Build();
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
 
             MembershipCreateStatus status;
@@ -105,7 +105,7 @@ namespace RavenDBMembership.Tests
             var config = new MembershipConfigBuilder()
                 .WithMinimumPasswordLength(10).Build();
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
 
             // Act
@@ -125,7 +125,7 @@ namespace RavenDBMembership.Tests
             var config = new MembershipConfigBuilder()
                 .WithMinNonAlphanumericCharacters(2).Build();
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             // Act
             MembershipCreateStatus status;
@@ -145,7 +145,7 @@ namespace RavenDBMembership.Tests
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             // Act
             MembershipCreateStatus status;
@@ -162,7 +162,7 @@ namespace RavenDBMembership.Tests
         public void CreateUser_CorrectInput_ShouldCreateUserRecord()
         {
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             // act
             MembershipCreateStatus status;
@@ -182,10 +182,10 @@ namespace RavenDBMembership.Tests
                 .WithMinimumPasswordLength(10)
                 .Build();
             sut.Initialize(ProviderName, confg);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "short_)£1"));
@@ -200,10 +200,10 @@ namespace RavenDBMembership.Tests
                 .WithMinNonAlphanumericCharacters(10)
                 .Build();
             sut.Initialize(ProviderName, confg);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "veryLong_butnotEnoughAlphanumeric"));
@@ -218,10 +218,10 @@ namespace RavenDBMembership.Tests
                 .WithPasswordRegex("(?=.*?[0-9])(?=.*?[A-Za-z]).+") // At least one digit, one letter
                 .Build();
             sut.Initialize(ProviderName, confg);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "LongPasswordThatDoesNotMatchRegexp"));
@@ -233,10 +233,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, "incorrectPassword", Password));
@@ -247,13 +247,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithPasswordHashed(Password)
                 .Locked()
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "newPassword&**123_"));
@@ -265,13 +265,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithPasswordHashed(Password)
                 .Approved(false)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword(existingUser.Username, Password, "newPassword&**123_"));
@@ -282,10 +282,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePassword("IncorrectUsername", Password, "newPassword&**123_"));
@@ -296,10 +296,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act 
             const string newPassword = "newPassword&**123_";
@@ -320,10 +320,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePasswordQuestionAndAnswer(existingUser.Username, "incorrectPassword", "NewQuestion", "new Answer"));
@@ -334,13 +334,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithPasswordHashed(Password)
                 .Locked()
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePasswordQuestionAndAnswer(existingUser.Username, Password, "NewQuestion", "new Answer"));
@@ -351,13 +351,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithPasswordHashed(Password)
                 .Approved(false)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act && Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ChangePasswordQuestionAndAnswer(existingUser.Username, Password, "NewQuestion", "new Answer"));
@@ -368,10 +368,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().WithPasswordHashed(Password).Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             const string newPasswordQuestion = "Blah New Question";
@@ -394,10 +394,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act && Assert
             Assert.Throws<ProviderException>(() => sut.DeleteUser("WrongUsername", true));
@@ -408,10 +408,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             sut.DeleteUser(user.Username, true);
@@ -429,14 +429,14 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             const string matchedEmailPart = "job";
             var user1 = new UserBuilder().WithUsername("user1")
                 .WithEmail("hello+" + matchedEmailPart + "@mail.com").Build();
             var userNotMatched = new UserBuilder().WithEmail("Hello@world.com").Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user1);
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, userNotMatched);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user1);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, userNotMatched);
 
             // Act 
             int totalRecords;
@@ -459,9 +459,9 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 20);
+            TestHelpers.TestHelpers.CreateUsersInDocumentStore(sut.DocumentStore, 20);
             const int pageSize = 5;
 
             // Act
@@ -476,7 +476,7 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user1 = new UserBuilder()
                 .WithUsername("user1")
@@ -484,8 +484,8 @@ namespace RavenDBMembership.Tests
             var userNotMatched = new UserBuilder()
                 .WithUsername("johnyBoy")
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user1);
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, userNotMatched);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user1);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, userNotMatched);
 
             // Act 
             int totalRecords;
@@ -508,9 +508,9 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 20);
+            TestHelpers.TestHelpers.CreateUsersInDocumentStore(sut.DocumentStore, 20);
             const int pageSize = 5;
 
             // Act
@@ -526,9 +526,9 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 5);
+            TestHelpers.TestHelpers.CreateUsersInDocumentStore(sut.DocumentStore, 5);
 
             // Act
             int totalRecords;
@@ -544,9 +544,9 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, 10);
+            TestHelpers.TestHelpers.CreateUsersInDocumentStore(sut.DocumentStore, 10);
 
             // Act 
             int totalRecords;
@@ -563,10 +563,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             const int numberOfOnlineUsers = 10;
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, numberOfOnlineUsers);
+            TestHelpers.TestHelpers.CreateUsersInDocumentStore(sut.DocumentStore, numberOfOnlineUsers);
 
             // Act
             var result = sut.GetNumberOfUsersOnline();
@@ -581,10 +581,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             const int numberOfOnlineUsers = 10;
-            AbstractTestBase.CreateUsersInDocumentStore(sut.DocumentStore, numberOfOnlineUsers);
+            TestHelpers.TestHelpers.CreateUsersInDocumentStore(sut.DocumentStore, numberOfOnlineUsers);
 
             // make one user offline
             using (var session = sut.DocumentStore.OpenSession())
@@ -614,10 +614,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.GetUser(user.Username, false);
@@ -632,10 +632,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder().Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.GetUser("Wrong-username", false);
@@ -649,12 +649,12 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithLastActivityDate(DateTime.Now.AddDays(-10))
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.GetUser(user.Username, true);
@@ -670,14 +670,14 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var key = Guid.NewGuid().ToString();
 
             var user = new UserBuilder()
                 .WithProviderUserKey(key)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.GetUser((object)key, false);
@@ -690,12 +690,12 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithProviderUserKey(Guid.NewGuid().ToString())
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.GetUser((object)Guid.NewGuid().ToString(), false);
@@ -709,7 +709,7 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var key = Guid.NewGuid().ToString();
 
@@ -717,7 +717,7 @@ namespace RavenDBMembership.Tests
                 .WithLastActivityDate(DateTime.Now.AddDays(-10))
                 .WithProviderUserKey(key)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.GetUser((object)key, true);
@@ -734,14 +734,14 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
 
             var user = new UserBuilder()
                 .WithEmail(UserEmail)
                 .WithUsername(Username)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             var result = sut.GetUserNameByEmail(UserEmail);
 
@@ -753,14 +753,14 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
 
             var user = new UserBuilder()
                 .WithEmail(UserEmail)
                 .WithUsername(Username)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             var result = sut.GetUserNameByEmail("IncorrectEmail");
 
@@ -777,7 +777,7 @@ namespace RavenDBMembership.Tests
                 .Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             //Act and Assert
             Assert.Throws<NotSupportedException>(() => sut.ResetPassword(null, null));
@@ -791,12 +791,12 @@ namespace RavenDBMembership.Tests
                 .EnablePasswordReset(true).Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username).Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act & Assert
             Assert.Throws<ProviderException>(() => sut.ResetPassword("wrongUsername", PasswordAnswer));
@@ -810,14 +810,14 @@ namespace RavenDBMembership.Tests
                 .EnablePasswordReset(true).Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .Locked(true)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act & Assert
             Assert.Throws<ProviderException>(() => sut.ResetPassword(Username, PasswordAnswer));
@@ -831,14 +831,14 @@ namespace RavenDBMembership.Tests
                 .EnablePasswordReset(true).Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .Approved(false)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act & Assert
             Assert.Throws<ProviderException>(() => sut.ResetPassword(Username, PasswordAnswer));
@@ -855,14 +855,14 @@ namespace RavenDBMembership.Tests
                 .Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .WithQuestionAnswer(PasswordQuestion, PasswordAnswer)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act & Assert
             Assert.Throws<MembershipPasswordException>(() => sut.ResetPassword(Username, "Wrong Answer"));
@@ -879,7 +879,7 @@ namespace RavenDBMembership.Tests
                 .Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var initialFailedAttemptsCount = 2;
             var user = new UserBuilder()
@@ -888,7 +888,7 @@ namespace RavenDBMembership.Tests
                 .WithFailedPasswordAttempts(initialFailedAttemptsCount)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act & Assert
             try
@@ -917,7 +917,7 @@ namespace RavenDBMembership.Tests
                 .Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
@@ -925,7 +925,7 @@ namespace RavenDBMembership.Tests
                 .WithPasswordHashed(Password)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.ResetPassword(Username, PasswordAnswer);
@@ -945,13 +945,13 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .Locked(true)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.UnlockUser("WrongUsername");
@@ -966,14 +966,14 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .Locked(true)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             var result = sut.UnlockUser(Username);
@@ -987,14 +987,14 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .Locked(true)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             // Act
             sut.UnlockUser(Username);
@@ -1014,14 +1014,14 @@ namespace RavenDBMembership.Tests
         {
             //Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .WithProviderUserKey(Guid.NewGuid().ToString())
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             var membershipUser = new MembershipUser(ProviderName, Util.RandomString(), user.Id, Util.RandomString(),
                                                     Util.RandomString(), Util.RandomString(), true, false, DateTime.Now,
@@ -1036,14 +1036,14 @@ namespace RavenDBMembership.Tests
         public void UpdateUser_WrongUsername_ThrowsException()
         {
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .WithProviderUserKey(Guid.NewGuid().ToString())
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             var membershipUser = new MembershipUser(ProviderName, Util.RandomString(), null, // null for ProviderUserKey
                                                     Util.RandomString(), Util.RandomString(), Util.RandomString(), true, false, DateTime.Now,
@@ -1058,14 +1058,14 @@ namespace RavenDBMembership.Tests
         public void UpdateUser_UserIsFound_UpdatesUserInStorage()
         {
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var user = new UserBuilder()
                 .WithUsername(Username)
                 .WithProviderUserKey(Guid.NewGuid().ToString())
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, user);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, user);
 
             var membershipUser = new MembershipUser(ProviderName, user.Username, user.Id, // null for ProviderUserKey
                                                     Util.RandomString(), Util.RandomString(), Util.RandomString(), true, false, DateTime.Now,
@@ -1100,10 +1100,10 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder().Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             var result = sut.ValidateUser("WrongUsername", Password);
@@ -1118,13 +1118,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .Locked(true)
                 .WithPasswordHashed(Password)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             var result = sut.ValidateUser(existingUser.Username, Password);
@@ -1139,13 +1139,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .Approved(false)
                 .WithPasswordHashed(Password)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             var result = sut.ValidateUser(existingUser.Username, Password);
@@ -1160,12 +1160,12 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithPasswordHashed(Password)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             var result = sut.ValidateUser(existingUser.Username, Password);
@@ -1179,13 +1179,13 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithFailedPasswordAttempts(-1)
                 .WithPasswordHashed(Password)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             sut.ValidateUser(existingUser.Username, Password);
@@ -1203,12 +1203,12 @@ namespace RavenDBMembership.Tests
         {
             // Arrange
             sut.Initialize(ProviderName, new MembershipConfigBuilder().Build());
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithFailedPasswordAttempts(-1)
                 .Build();
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             sut.ValidateUser(existingUser.Username, "WrongPassword");
@@ -1230,13 +1230,13 @@ namespace RavenDBMembership.Tests
                 .WithMaxInvalidPasswordAttempts(2)
                 .Build();
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithUsername(Username)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             sut.ValidateUser(existingUser.Username, "WrongPassword");
@@ -1260,7 +1260,7 @@ namespace RavenDBMembership.Tests
                 .Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithUsername(Username)
@@ -1268,7 +1268,7 @@ namespace RavenDBMembership.Tests
                 .WithFailedPasswordAttempts(1)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             sut.ValidateUser(existingUser.Username, "wrongPassword");
@@ -1293,7 +1293,7 @@ namespace RavenDBMembership.Tests
                 .Build();
 
             sut.Initialize(ProviderName, config);
-            AbstractTestBase.InjectProvider(Membership.Providers, sut);
+            TestHelpers.TestHelpers.InjectProvider(Membership.Providers, sut);
 
             var existingUser = new UserBuilder()
                 .WithUsername(Username)
@@ -1301,7 +1301,7 @@ namespace RavenDBMembership.Tests
                 .WithFailedPasswordAttempts(1)
                 .Build();
 
-            AbstractTestBase.AddUserToDocumentStore(sut.DocumentStore, existingUser);
+            TestHelpers.TestHelpers.AddUserToDocumentStore(sut.DocumentStore, existingUser);
 
             // Act
             sut.ValidateUser(existingUser.Username, "wrongPassword");

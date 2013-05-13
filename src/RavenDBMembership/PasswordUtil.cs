@@ -18,7 +18,7 @@ namespace RavenDBMembership
             return str;
         }
 
-        public static string HashPassword(string pass, string salt)
+        public static string HashPassword(String password, String salt)
         {
             if (string.IsNullOrEmpty(salt))
             {
@@ -30,7 +30,7 @@ namespace RavenDBMembership
             const int cost = 512; // cost of the algorithm - how many time we go round. Must be power of 2
             const int blockSize = 8;    
             const int parallel = 16;    // maximum number of threads to use. 
-            SCrypt.ComputeKey(Encoding.Unicode.GetBytes(pass), Encoding.Unicode.GetBytes(salt), cost, blockSize, parallel, null, derivedBytes);
+            SCrypt.ComputeKey(Encoding.Unicode.GetBytes(password), Encoding.Unicode.GetBytes(salt), cost, blockSize, parallel, null, derivedBytes);
 
             var hashPassword = new string(UnixBase64.Encode(derivedBytes));
             return hashPassword;

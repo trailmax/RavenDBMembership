@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using System;
+using System.Configuration.Provider;
+using NUnit.Framework;
 
 namespace RavenDBMembership.Tests
 {
@@ -8,7 +10,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void CheckSaltIsRandom()
         {
-            for (int i = 0; i < 10000; i++)
+            for (var i = 0; i < 10000; i++)
             {
                 var salt = PasswordUtil.CreateRandomSalt();
                 var salt2 = PasswordUtil.CreateRandomSalt();
@@ -28,15 +30,22 @@ namespace RavenDBMembership.Tests
 
 
         [Test]
-        public void PassworwordIsHashed()
+        public void PasswordIsHashed()
         {
-            var password = "LetMeIn";
-            var salt = "salty-salty";
+            const string password = "LetMeIn";
+            const string salt = "salty-salty";
 
             var hashed = PasswordUtil.HashPassword(password, salt);
             var hashed2 = PasswordUtil.HashPassword(password, salt);
 
             Assert.AreEqual(hashed, hashed2);
+        }
+
+
+        [Test]
+        public void HashPassword_NoSalt_ThrowsException()
+        {
+            Assert.Throws<ProviderException>(() => PasswordUtil.HashPassword("SomePassword", String.Empty));
         }
     }
 }
