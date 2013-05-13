@@ -157,7 +157,7 @@ namespace RavenDBMembership
             }
 
 
-            var user = new User();
+            var user = new RavenDBUser();
             user.Username = username.ToLower();
             user.PasswordSalt = PasswordUtil.CreateRandomSalt();
             user.PasswordHash = PasswordUtil.HashPassword(password, user.PasswordSalt);
@@ -172,7 +172,7 @@ namespace RavenDBMembership
 
             using (var session = DocumentStore.OpenSession())
             {
-                var existingUser = session.Query<User>()
+                var existingUser = session.Query<RavenDBUser>()
                     .FirstOrDefault(u => (u.Email == email || u.Username == username) 
                         && u.ApplicationName == ApplicationName);
 
@@ -247,7 +247,7 @@ namespace RavenDBMembership
 
             using (var session = DocumentStore.OpenSession())
             {
-                var user = (from u in session.Query<User>()
+                var user = (from u in session.Query<RavenDBUser>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
 
@@ -280,7 +280,7 @@ namespace RavenDBMembership
 
             using (var session = DocumentStore.OpenSession())
             {
-                var user = (from u in session.Query<User>()
+                var user = (from u in session.Query<RavenDBUser>()
                              where u.Username == username && u.ApplicationName == ApplicationName
                              select u).SingleOrDefault();
 
@@ -298,7 +298,7 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var q = from u in session.Query<User>()
+                var q = from u in session.Query<RavenDBUser>()
                         where u.Username == username && u.ApplicationName == ApplicationName
                         select u;
                 var user = q.SingleOrDefault();
@@ -337,9 +337,9 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                return (from u in session.Query<User>()
+                return (from u in session.Query<RavenDBUser>()
                         where u.ApplicationName == ApplicationName && u.IsOnline
-                        select u).Count<User>();
+                        select u).Count<RavenDBUser>();
             }
         }
 
@@ -355,7 +355,7 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var user = session.Query<User>()
+                var user = session.Query<RavenDBUser>()
                            .SingleOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
 
                 if (user == null)
@@ -379,7 +379,7 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var user = session.Load<User>(providerUserKey.ToString());
+                var user = session.Load<RavenDBUser>(providerUserKey.ToString());
                 if (user == null)
                 {
                     return null;
@@ -401,7 +401,7 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var q = from u in session.Query<User>()
+                var q = from u in session.Query<RavenDBUser>()
                         where u.Email == email && u.ApplicationName == ApplicationName
                         select u.Username;
                 return q.SingleOrDefault();
@@ -419,7 +419,7 @@ namespace RavenDBMembership
 
             using (var session = DocumentStore.OpenSession())
             {
-                var user = session.Query<User>()
+                var user = session.Query<RavenDBUser>()
                     .SingleOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
                 if (user == null)
                 {
@@ -452,7 +452,7 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().SingleOrDefault(x => x.Username == userName && x.ApplicationName == ApplicationName);
+                var user = session.Query<RavenDBUser>().SingleOrDefault(x => x.Username == userName && x.ApplicationName == ApplicationName);
 
                 if (user == null)
                 {
@@ -470,10 +470,10 @@ namespace RavenDBMembership
         {
             using (var session = DocumentStore.OpenSession())
             {
-                User dbUser;
+                RavenDBUser dbUser;
                 if (user.ProviderUserKey != null)
                 {
-                    dbUser = session.Load<User>(user.ProviderUserKey.ToString());
+                    dbUser = session.Load<RavenDBUser>(user.ProviderUserKey.ToString());
                     if (dbUser.Username != user.UserName)
                     {
                         throw new ProviderException("Provider does not support updating username");
@@ -481,7 +481,7 @@ namespace RavenDBMembership
                 }
                 else
                 {
-                    dbUser = session.Query<User>()
+                    dbUser = session.Query<RavenDBUser>()
                         .SingleOrDefault(u => u.Username == user.UserName && u.ApplicationName == this.ApplicationName);
                 }
 
@@ -519,7 +519,7 @@ namespace RavenDBMembership
 
             using (var session = DocumentStore.OpenSession())
             {
-                var user = (from u in session.Query<User>()
+                var user = (from u in session.Query<RavenDBUser>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
 
@@ -545,7 +545,7 @@ namespace RavenDBMembership
         }
 
 
-        private bool IsLockedOutValidationHelper(User user)
+        private bool IsLockedOutValidationHelper(RavenDBUser user)
         {
             long minutesSinceLastAttempt = (DateTime.Now - user.LastFailedPasswordAttempt).Minutes;
             if (user.FailedPasswordAttempts >= MaxInvalidPasswordAttempts
@@ -557,15 +557,15 @@ namespace RavenDBMembership
         }
 
 
-        private MembershipUserCollection FindUsers(Func<User, bool> predicate, int pageIndex, int pageSize, out int totalRecords)
+        private MembershipUserCollection FindUsers(Func<RavenDBUser, bool> predicate, int pageIndex, int pageSize, out int totalRecords)
         {
             var membershipUsers = new MembershipUserCollection();
             using (var session = DocumentStore.OpenSession())
             {
-                var q = from u in session.Query<User>()
+                var q = from u in session.Query<RavenDBUser>()
                         where u.ApplicationName == ApplicationName
                         select u;
-                IEnumerable<User> results;
+                IEnumerable<RavenDBUser> results;
                 if (predicate != null)
                 {
                     results = q.Where(predicate);
@@ -585,7 +585,7 @@ namespace RavenDBMembership
         }
 
 
-        private MembershipUser UserToMembershipUser(User user)
+        private MembershipUser UserToMembershipUser(RavenDBUser user)
         {
             // TODO last password changed and other stuff is required.
             return new MembershipUser(this.providerName, user.Username, user.Id, user.Email, user.PasswordQuestion, user.Comment, user.IsApproved, user.IsLockedOut

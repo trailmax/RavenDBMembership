@@ -14,7 +14,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         /// </summary>
         /// <param name="store"></param>
         /// <param name="user"></param>
-        public static void AddUserToDocumentStore(IDocumentStore store, User user)
+        public static void AddUserToDocumentStore(IDocumentStore store, RavenDBUser user)
         {
             using (var session = store.OpenSession())
             {
@@ -29,7 +29,7 @@ namespace RavenDBMembership.Tests.TestHelpers
         /// <param name="store">Store where to save</param>
         /// <param name="numberOfUsers">Number of users to create</param>
         /// <returns></returns>
-        public static List<User> CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
+        public static List<RavenDBUser> CreateUsersInDocumentStore(IDocumentStore store, int numberOfUsers)
         {
             var users = CreateDummyUsers(numberOfUsers);
             using (var session = store.OpenSession())
@@ -43,9 +43,9 @@ namespace RavenDBMembership.Tests.TestHelpers
             return users;
         }
 
-        private static List<User> CreateDummyUsers(int numberOfUsers)
+        private static List<RavenDBUser> CreateDummyUsers(int numberOfUsers)
         {
-            var users = new List<User>(numberOfUsers);
+            var users = new List<RavenDBUser>(numberOfUsers);
             for (var i = 0; i < numberOfUsers; i++)
             {
                 var user = new UserBuilder()

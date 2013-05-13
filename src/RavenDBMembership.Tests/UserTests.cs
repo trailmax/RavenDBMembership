@@ -9,7 +9,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void UserIsNotOnline()
         {
-            var user = new User()
+            var user = new RavenDBUser()
             {
                 LastActivityDate = DateTime.Now.AddHours(-50)
             };
@@ -21,7 +21,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void UserIsOnline()
         {
-            var user = new User()
+            var user = new RavenDBUser()
             {
                 LastActivityDate = DateTime.Now.AddMinutes(-5)
             };

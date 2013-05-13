@@ -23,7 +23,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void DifferentInMemorySessionHoldsTheSameData()
         {
-            var user = new User()
+            var user = new RavenDBUser()
                             {
                                 Username = "Hello world",
                                 Comment = "How is the session working in embedded"
@@ -33,7 +33,7 @@ namespace RavenDBMembership.Tests
                 firstSession.Store(user);
                 firstSession.SaveChanges();
                 // assert that user was saved indeed.
-                var savedUser = firstSession.Query<User>().SingleOrDefault(u => u.Username == user.Username);
+                var savedUser = firstSession.Query<RavenDBUser>().SingleOrDefault(u => u.Username == user.Username);
                 Assert.NotNull(user.Id);
                 Assert.AreEqual(user.Id, savedUser.Id);
             }
@@ -41,7 +41,7 @@ namespace RavenDBMembership.Tests
             // now we open second session
             using (var secondSession = documentStore.OpenSession())
             {
-                var otherUser = secondSession.Query<User>().SingleOrDefault(u => u.Username == user.Username);
+                var otherUser = secondSession.Query<RavenDBUser>().SingleOrDefault(u => u.Username == user.Username);
                 Assert.AreEqual(user.Id, otherUser.Id);
 
                 // hm..indeed. Even if the sessions are changed, but DocumentStore is not disposed, documents are stored there.
@@ -52,7 +52,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void StoredDocumentsAreDisposed()
         {
-            var user = new User()
+            var user = new RavenDBUser()
             {
                 Username = "Hello world",
                 Comment = "How is the session working in embedded"
@@ -63,7 +63,7 @@ namespace RavenDBMembership.Tests
                 session.Store(user);
                 session.SaveChanges();
                 // assert that user was saved indeed.
-                var savedUser = session.Query<User>().SingleOrDefault(u => u.Username == user.Username);
+                var savedUser = session.Query<RavenDBUser>().SingleOrDefault(u => u.Username == user.Username);
                 Assert.NotNull(user.Id);
                 Assert.AreEqual(user.Id, savedUser.Id);
             }
@@ -75,7 +75,7 @@ namespace RavenDBMembership.Tests
                               {
                                   using (var session = documentStore.OpenSession())
                                   {
-                                      var savedUser = session.Query<User>().SingleOrDefault(u => u.Username == user.Username);
+                                      var savedUser = session.Query<RavenDBUser>().SingleOrDefault(u => u.Username == user.Username);
                                   }
                               });
         }
@@ -85,7 +85,7 @@ namespace RavenDBMembership.Tests
         public void UserCanBeVerified()
         {
             // Arrange
-            var originalUser = new User
+            var originalUser = new RavenDBUser
             {
                 Username = "dummyUser",
                 Email = "Hello@world.org",
@@ -105,13 +105,13 @@ namespace RavenDBMembership.Tests
             // Act
             using (var session = documentStore.OpenSession())
             {
-                var userLoaded = session.Load<User>(originalUser.Id);
+                var userLoaded = session.Load<RavenDBUser>(originalUser.Id);
                 Assert.NotNull(userLoaded); // works fine
 
-                var user2 = session.Query<User>().SingleOrDefault(u => u.Username == originalUser.Username && u.ApplicationName == originalUser.ApplicationName);
+                var user2 = session.Query<RavenDBUser>().SingleOrDefault(u => u.Username == originalUser.Username && u.ApplicationName == originalUser.ApplicationName);
                 Assert.NotNull(user2);  // fails, as user2 is null
 
-                var userList = session.Query<User>().Where(u => u.Username == userLoaded.Username && u.ApplicationName == originalUser.ApplicationName).Select(u => u).ToList();
+                var userList = session.Query<RavenDBUser>().Where(u => u.Username == userLoaded.Username && u.ApplicationName == originalUser.ApplicationName).Select(u => u).ToList();
                 Assert.IsNotEmpty(userList); // fails - nothing there.
             }
         }
@@ -120,7 +120,7 @@ namespace RavenDBMembership.Tests
         [Test]
         public void StoreUserShouldCreateId()
         {
-            var newUser = new User { Username = "dummyUser", FullName = "dummyUser Boland" };
+            var newUser = new RavenDBUser { Username = "dummyUser", FullName = "dummyUser Boland" };
             var newUserIdPrefix = newUser.Id;
 
             using (var session = documentStore.OpenSession())

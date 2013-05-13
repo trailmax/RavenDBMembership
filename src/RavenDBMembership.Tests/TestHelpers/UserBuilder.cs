@@ -6,11 +6,11 @@ namespace RavenDBMembership.Tests.TestHelpers
 {
     public class UserBuilder
     {
-        private readonly User user;
+        private readonly RavenDBUser user;
 
         public UserBuilder()
         {
-            user = new User()
+            user = new RavenDBUser()
             {
                 Username = "John",
                 PasswordSalt = PasswordUtil.CreateRandomSalt(),
@@ -29,7 +29,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             };
         }
 
-        public User Build()
+        public RavenDBUser Build()
         {
             return user;
         }
@@ -115,7 +115,7 @@ namespace RavenDBMembership.Tests.TestHelpers
             var result = sut.Build();
 
             Assert.NotNull(result);
-            Assert.IsInstanceOf<User>(result);
+            Assert.IsInstanceOf<RavenDBUser>(result);
         }
 
         [Test]

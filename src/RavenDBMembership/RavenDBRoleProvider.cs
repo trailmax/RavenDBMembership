@@ -54,7 +54,7 @@ namespace RavenDBMembership
             }
             using (var session = DocumentStore.OpenSession())
             {
-                var users = (from u in session.Query<User>()
+                var users = (from u in session.Query<RavenDBUser>()
                              where u.Username.In(usernames) && u.ApplicationName == this.ApplicationName
                              select u).ToList();
 
@@ -95,7 +95,7 @@ namespace RavenDBMembership
                 if (role != null)
                 {
                     // also find users that have this role
-                    var users = (from u in session.Query<User>()
+                    var users = (from u in session.Query<RavenDBUser>()
                                  where u.Roles.Any(roleId => roleId == role.Id)
                                  select u).ToList();
                     if (users.Any() && throwOnPopulatedRole)
@@ -137,7 +137,7 @@ namespace RavenDBMembership
 
                 // Find users
                 var searchTerms = new StringBuilder().Append(usernameToMatch).Append("*").ToString();
-                var usernames = session.Query<User>()
+                var usernames = session.Query<RavenDBUser>()
                                    .Search(u => u.Username, searchTerms, escapeQueryOptions: EscapeQueryOptions.AllowPostfixWildcard)
                                    .Where(u => u.Roles.Any(r => r == role.Id))
                                    .Select(u => u.Username)
@@ -177,7 +177,7 @@ namespace RavenDBMembership
             }
             using (var session = DocumentStore.OpenSession())
             {
-                var user = (from u in session.Query<User>()
+                var user = (from u in session.Query<RavenDBUser>()
                             where u.Username == username && u.ApplicationName == ApplicationName
                             select u).SingleOrDefault();
                 if (user == null)
@@ -218,7 +218,7 @@ namespace RavenDBMembership
                 {
                     throw new ProviderException("Role does not exist");
                 }
-                var usernames = from u in session.Query<User>()
+                var usernames = from u in session.Query<RavenDBUser>()
                                 where u.Roles.Any(x => x == role.Id)
                                 select u.Username;
                 return usernames.ToArray();
@@ -242,7 +242,7 @@ namespace RavenDBMembership
             }
             using (var session = DocumentStore.OpenSession())
             {
-                var user = session.Query<User>()
+                var user = session.Query<RavenDBUser>()
                     .FirstOrDefault(u => u.Username == username && u.ApplicationName == ApplicationName);
 
                 if (user == null)
@@ -289,7 +289,7 @@ namespace RavenDBMembership
 
             using (var session = DocumentStore.OpenSession())
             {
-                var users = (from u in session.Query<User>()
+                var users = (from u in session.Query<RavenDBUser>()
                              where u.Username.In(usernames) && u.ApplicationName == ApplicationName
                              select u).ToList();
 

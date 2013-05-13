@@ -4,7 +4,7 @@ using Raven.Client.Indexes;
 
 namespace RavenDBMembership
 {
-    public class UserByUsernameIndex : AbstractIndexCreationTask<User>
+    public class UserByUsernameIndex : AbstractIndexCreationTask<RavenDBUser>
     {
         public UserByUsernameIndex()
         {

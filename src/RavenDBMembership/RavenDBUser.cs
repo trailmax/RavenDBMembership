@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RavenDBMembership
 {
-	public class User
+	public class RavenDBUser
 	{
 		public string Id { get; set; }
 		public string ApplicationName { get; set; }
@@ -37,7 +37,7 @@ namespace RavenDBMembership
 
 	    public DateTime LastFailedPasswordAttempt { get; set; }
 
-	    public User()
+	    public RavenDBUser()
 		{
 			Roles = new List<string>();
 			Id = "authorization/users/"; // db assigns id

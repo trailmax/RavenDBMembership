@@ -308,7 +308,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 var newHash = PasswordUtil.HashPassword(newPassword, user.PasswordSalt);
                 Assert.AreEqual(newHash, user.PasswordHash);
             }
@@ -381,7 +381,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 var hashedAnswer = PasswordUtil.HashPassword(newPasswordAnswer.ToLower(), user.PasswordSalt);
                 Assert.AreEqual(newPasswordQuestion, user.PasswordQuestion);
                 Assert.AreEqual(hashedAnswer, user.PasswordAnswer);
@@ -419,7 +419,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var nullUser = session.Query<User>().FirstOrDefault(u => u.Username == user.Username);
+                var nullUser = session.Query<RavenDBUser>().FirstOrDefault(u => u.Username == user.Username);
                 Assert.IsNull(nullUser);
             }
         }
@@ -589,7 +589,7 @@ namespace RavenDBMembership.Tests
             // make one user offline
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var offlineUser = session.Query<User>().FirstOrDefault(u => u.IsOnline);
+                var offlineUser = session.Query<RavenDBUser>().FirstOrDefault(u => u.IsOnline);
                 offlineUser.LastActivityDate = DateTime.Now.AddDays(-5);
                 session.SaveChanges();
             }
@@ -901,7 +901,7 @@ namespace RavenDBMembership.Tests
             }
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var updatedUser = session.Query<User>().First(u => u.Username == user.Username);
+                var updatedUser = session.Query<RavenDBUser>().First(u => u.Username == user.Username);
                 Assert.AreEqual(initialFailedAttemptsCount + 1, updatedUser.FailedPasswordAttempts);
             }
         }
@@ -934,7 +934,7 @@ namespace RavenDBMembership.Tests
             Assert.AreEqual(8, result.Length);
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var updatedUser = session.Query<User>().First(u => u.Username == user.Username);
+                var updatedUser = session.Query<RavenDBUser>().First(u => u.Username == user.Username);
                 Assert.AreNotEqual(updatedUser.PasswordHash, user.PasswordHash);
             }
         }
@@ -1002,7 +1002,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var updatedUser = session.Query<User>().FirstOrDefault(u => u.Username == user.Username);
+                var updatedUser = session.Query<RavenDBUser>().FirstOrDefault(u => u.Username == user.Username);
 
                 Assert.IsFalse(updatedUser.IsLockedOut);
             }
@@ -1077,7 +1077,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var updatedUser = session.Load<User>(user.Id);
+                var updatedUser = session.Load<RavenDBUser>(user.Id);
                 AssertionHelpers.PropertiesAreEqual(updatedUser, membershipUser, "PasswordQuestion");
             }
         }
@@ -1193,7 +1193,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 Assert.AreEqual(0, user.FailedPasswordAttempts);
             }
         }
@@ -1216,7 +1216,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 Assert.AreEqual(0, user.FailedPasswordAttempts);
             }
         }
@@ -1245,7 +1245,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 Assert.True(user.IsLockedOut);
             }
         }
@@ -1277,7 +1277,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 Assert.False(user.IsLockedOut);
             }
         }
@@ -1310,7 +1310,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var user = session.Query<User>().First(u => u.Username == existingUser.Username);
+                var user = session.Query<RavenDBUser>().First(u => u.Username == existingUser.Username);
                 Assert.True(user.IsLockedOut);
             }
         }

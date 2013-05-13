@@ -92,7 +92,7 @@ namespace RavenDBMembership.Tests
             // Assert -- all users should be added to all the roles
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var dbUsers = session.Query<User>().Where(u => u.Username.In(usernames)).Select(u => u).ToList();
+                var dbUsers = session.Query<RavenDBUser>().Where(u => u.Username.In(usernames)).Select(u => u).ToList();
                 foreach (var dbUser in dbUsers)
                 {
                     Assert.IsNotEmpty(dbUser.Roles);
@@ -205,7 +205,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var dbUser = session.Query<User>().First(u => u.Username == user.Username);
+                var dbUser = session.Query<RavenDBUser>().First(u => u.Username == user.Username);
                 Assert.IsEmpty(dbUser.Roles);
             }
         }
@@ -712,7 +712,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var dbUser = session.Load<User>(user.Id);
+                var dbUser = session.Load<RavenDBUser>(user.Id);
                 Assert.Contains(role.Id, dbUser.Roles.ToList());
             }
         }
@@ -744,7 +744,7 @@ namespace RavenDBMembership.Tests
             // Assert
             using (var session = sut.DocumentStore.OpenSession())
             {
-                var dbUser = session.Load<User>(user.Id);
+                var dbUser = session.Load<RavenDBUser>(user.Id);
                 Assert.False(dbUser.Roles.Contains(role.Id));
                 Assert.True(dbUser.Roles.Contains(role2.Id.ToLower()));
             }
